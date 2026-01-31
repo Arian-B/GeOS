@@ -1,94 +1,114 @@
-# GeOS  
+# GeOS
 ### An Adaptive ML-Driven Linux OS Distribution for Smart Farming on Embedded Devices
 
-GeOS is a **Linux-based operating system distribution** designed for **energy-efficient, intelligent agriculture systems** running on **Raspberry Pi and embedded hardware**.
+GeOS is a **Linux-based operating system distribution and control layer implemented primarily in Python**, designed for **energy-efficient, intelligent agriculture systems** running on **Raspberry Pi and other embedded Linux devices**.
 
-Unlike traditional embedded Linux systems, GeOS introduces a **machine-learning driven control layer** that dynamically adapts OS behavior based on:
-- Sensor workloads
-- System telemetry
-- Energy constraints
-- Agricultural context
+Rather than replacing the Linux kernel, GeOS functions as a **Python-based embedded OS extension layer** that operates in user space, integrating tightly with Linux scheduling, telemetry, and process control mechanisms.
 
----
+Unlike traditional embedded Linux systems with static policies, GeOS introduces a **machine-learning-driven control framework** that dynamically adapts system behavior based on:
 
-## 🎯 Project Goals
-- Build an **energy-aware OS layer** for smart farming
-- Use **ML & Reinforcement Learning** for adaptive decision-making
-- Simulate real agricultural workloads without physical hardware
-- Design a **touch-friendly GUI** for farmers
-- Prepare the system for future deployment on Raspberry Pi
+- Agricultural sensor workloads  
+- System-level telemetry (CPU, memory, load)  
+- Energy and power constraints  
+- Environmental and operational context  
 
 ---
 
-## 🧠 Core Innovations
-- ML-assisted OS energy mode switching
-- Reinforcement learning–based policy optimization
-- Realistic workload simulation (sensors, irrigation, analytics, surveillance)
-- Telemetry-driven dataset generation
-- Modular Linux-based architecture (kernel untouched)
+## Project Goals
+1. Design an **energy-aware OS control layer** for smart farming systems  
+2. Apply **machine learning and reinforcement learning** for adaptive OS-level decision-making  
+3. Simulate realistic agricultural workloads without physical hardware  
+4. Develop a **touch-friendly GUI** suitable for non-technical users (farmers)  
+5. Prepare the system for future deployment on **Raspberry Pi embedded hardware**  
 
 ---
 
-## 🧩 Architecture Overview
+## Core Innovations
+- Python-based ML control layer integrated with Linux user-space mechanisms  
+- Reinforcement learning–based policy optimization for energy management  
+- Realistic workload simulation (sensors, irrigation, analytics, surveillance)  
+- Telemetry-driven dataset generation for continuous learning  
+- Modular Linux-based architecture with the kernel left untouched  
+
+---
+
+## Architecture Overview
+```
 GeOS
-├── core_os # Energy controller, policies, OS state
-├── ml_engine # ML models, RL agents, policy training
-├── workloads # Simulated agricultural workloads
-├── telemetry # System & sensor data collection
-├── gui # Touch-friendly Qt GUI
-├── sensors # Sensor simulation layer
-├── control # Actuator & override logic
-├── datasets # Generated training datasets (ignored in git)
-└── logs # Runtime logs (ignored in git)
+├── core_os        # Energy controller, policies, OS state (Python)
+├── ml_engine     # ML models, RL agents, policy training (Python)
+├── workloads     # Simulated agricultural workloads
+├── telemetry     # System and sensor data collection
+├── gui           # Touch-friendly Qt-based GUI
+├── sensors       # Sensor simulation layer
+├── control       # Actuator and override logic
+├── datasets      # Generated training datasets (git-ignored)
+└── logs          # Runtime logs (git-ignored)
+```
 
 ---
 
-## 🖥️ System Requirements
-- Linux (tested on Ubuntu via WSL)
-- Python 3.10+
-- PySide6
+## System Requirements
+- Linux OS (tested on Ubuntu via WSL; target: Raspberry Pi OS)
+- Python 3.10 or higher
+- PySide6 (GUI framework)
 - scikit-learn
 - psutil
 
 ---
 
-## 🚀 Quick Start (Demo Mode)
+## Quick Start (Demo Mode)
 
-1 Start Energy Controller
+### 1. Start the Energy Controller
 ```bash
 python3 -m core_os.energy_controller
+```
 
-2️Run Workload Simulator
+### 2. Run the Workload Simulator
+```bash
 python3 workloads/workload_manager.py
+```
 
-3️Start Telemetry Collection
+### 3. Start Telemetry Collection
+```bash
 python3 telemetry/collector.py
+```
 
-4 launch GUI
+### 4. Launch the GUI
+```bash
 python3 -m gui.app
-
-5 ML Training (Policy Model)
-python3 ml_engine/train_policy_model.py
-
-6 Evaluate:
-python3 ml_engine/evaluate_policies.py
-
-📌 Current Status
-
-~70% implementation complete
-
-Kernel-level integration planned (future)
-
-Raspberry Pi deployment scheduled in next phase
-
-📄 License
-
-MIT License (temporary)
-
-👤 Author
-
-Ari
-Computer Science & Engineering
-Focus: Systems Engineering, ML-Driven OS Design
+```
 
 ---
+
+## Machine Learning Pipeline
+
+### Train the Policy Model
+```bash
+python3 ml_engine/train_policy_model.py
+```
+
+### Evaluate the Learned Policy
+```bash
+python3 ml_engine/evaluate_policies.py
+```
+
+---
+
+## Current Status
+- Approximately 70% implementation complete  
+- Core OS logic, ML pipeline, and GUI implemented  
+- Kernel-level integration planned for a future phase  
+- Raspberry Pi deployment scheduled in the next development phase  
+
+---
+
+## License
+MIT License (temporary)
+
+---
+
+## Author
+**Ari**  
+Computer Science and Engineering  
+Focus: Systems Engineering, Embedded Linux, ML-Driven OS Design  
