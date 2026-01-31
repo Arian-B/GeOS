@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.env
+venv/
+.env/
+
+# ML models (keep optional)
+*.pkl
+q_table.pkl
+
+# Logs & telemetry
+logs/*.log
+datasets/*.csv
+datasets/*.jsonl
+
+# OS generated state
+state/*.json
+
+# Qt / GUI cache
+*.qmlc
+
+# Editor junk
+.vscode/
+.idea/
+
+# System
+.DS_Store
