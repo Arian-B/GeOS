@@ -54,25 +54,23 @@ GeOS
 
 ## 🚀 Quick Start (Demo Mode)
 
- 1️⃣ Start Energy Controller
+1 Start Energy Controller
 ```bash
 python3 -m core_os.energy_controller
 
-2️⃣ Run Workload Simulator
+2️Run Workload Simulator
 python3 workloads/workload_manager.py
 
-3️⃣ Start Telemetry Collection
+3️Start Telemetry Collection
 python3 telemetry/collector.py
 
-4️⃣ Launch GUI
+4 launch GUI
 python3 -m gui.app
 
-📊 ML Training (Policy Model)
+5 ML Training (Policy Model)
 python3 ml_engine/train_policy_model.py
 
-
-Evaluate:
-
+6 Evaluate:
 python3 ml_engine/evaluate_policies.py
 
 📌 Current Status
