@@ -1,5 +1,6 @@
-from PySide6.QtWidgets import QWidget, QLabel, QVBoxLayout, QFrame
+from PySide6.QtWidgets import QWidget, QLabel, QVBoxLayout, QFrame, QPushButton
 from PySide6.QtCore import QTimer
+from control.os_control import read_control, write_control
 import json
 import os
 from core_os.notifications import get_latest_alert
@@ -37,6 +38,19 @@ class HomePage(QWidget):
 
         self.control_state_label = QLabel("CONTROL: --")
         self.control_state_label.setStyleSheet("font-size: 16px;")
+
+        self.force_save = QPushButton("Force Energy Saver")
+        self.force_perf = QPushButton("Force Performance")
+        self.resume_ai = QPushButton("Resume AI Control")
+
+        for b in (self.force_save, self.force_perf, self.resume_ai):
+            b.setFixedHeight(36)
+            self.main_layout.addWidget(b)
+
+        self.force_save.clicked.connect(lambda: self.set_mode("ENERGY_SAVER"))
+        self.force_perf.clicked.connect(lambda: self.set_mode("PERFORMANCE"))
+        self.resume_ai.clicked.connect(lambda: self.set_mode(None))
+
 
         # === POWER SECTION ===
         power_frame = QFrame()
@@ -149,3 +163,9 @@ class HomePage(QWidget):
         self.soil_label.setText(f"Soil Moisture: {sensors.get('soil_moisture', '--')}%")
         self.temp_label.setText(f"Temperature: {sensors.get('temperature', '--')} °C")
         self.humidity_label.setText(f"Humidity: {sensors.get('humidity', '--')}%")
+
+
+    def set_mode(self, mode):
+        control = read_control()
+        control["forced_mode"] = mode
+        write_control(control)

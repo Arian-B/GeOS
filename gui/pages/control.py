@@ -11,15 +11,19 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__fil
 CONTROL_FILE = os.path.join(BASE_DIR, "control", "control.json")
 STATE_FILE = os.path.join(BASE_DIR, "state", "os_state.json")
 
-# Workload → Actuator mapping
+# -----------------------------
+# WORKLOAD → ACTUATOR MAP
+# -----------------------------
 WORKLOAD_MAP = {
+    "sensor_workload.py": "Sensor Network",
     "irrigation_workload.py": "Irrigation System",
     "camera_workload.py": "Farm Surveillance",
-    "sensor_workload.py": "Sensor Network",
     "analytics_workload.py": "Analytics Engine"
 }
 
-
+# -----------------------------
+# FILE HELPERS
+# -----------------------------
 def read_json(path):
     try:
         with open(path, "r") as f:
@@ -33,20 +37,35 @@ def write_json(path, data):
         json.dump(data, f, indent=2)
 
 
+# -----------------------------
+# WORKLOAD DETECTION
+# -----------------------------
 def running_workloads():
-    """Return set of running workload filenames"""
+    """
+    Detect running workload scripts by inspecting process command lines.
+    Returns: set of workload filenames currently active.
+    """
     active = set()
+
     for proc in psutil.process_iter(attrs=["cmdline"]):
         try:
-            cmd = " ".join(proc.info["cmdline"])
+            cmdline = proc.info["cmdline"]
+            if not cmdline:
+                continue
+
+            cmd = " ".join(cmdline)
             for wf in WORKLOAD_MAP:
                 if wf in cmd:
                     active.add(wf)
-        except Exception:
-            pass
+        except (psutil.NoSuchProcess, psutil.AccessDenied):
+            continue
+
     return active
 
 
+# -----------------------------
+# UI COMPONENTS
+# -----------------------------
 class ActuatorCard(QFrame):
     def __init__(self, title):
         super().__init__()
@@ -60,17 +79,18 @@ class ActuatorCard(QFrame):
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(20, 15, 20, 15)
-        layout.setSpacing(10)
+        layout.setSpacing(8)
 
         self.title = QLabel(title)
         self.title.setStyleSheet(f"""
             font-size: 18px;
+            font-weight: bold;
             color: {theme.TEXT_PRIMARY};
         """)
 
         self.status = QLabel("STATUS: --")
         self.status.setStyleSheet(f"""
-            font-size: 16px;
+            font-size: 15px;
             color: {theme.TEXT_SECONDARY};
         """)
 
@@ -78,6 +98,9 @@ class ActuatorCard(QFrame):
         layout.addWidget(self.status)
 
 
+# -----------------------------
+# CONTROL PAGE
+# -----------------------------
 class ControlPage(QWidget):
     def __init__(self):
         super().__init__()
@@ -96,12 +119,12 @@ class ControlPage(QWidget):
 
         # TOGGLE BUTTON
         self.toggle_btn = QPushButton("SWITCH MODE")
-        self.toggle_btn.setFixedHeight(45)
+        self.toggle_btn.setFixedHeight(44)
         self.toggle_btn.setStyleSheet(f"""
             QPushButton {{
                 background-color: {theme.BUTTON_ACTIVE};
                 color: {theme.TEXT_PRIMARY};
-                font-size: 16px;
+                font-size: 15px;
                 border: none;
                 border-radius: 6px;
             }}
@@ -123,12 +146,16 @@ class ControlPage(QWidget):
 
         main.addStretch()
 
+        # REFRESH TIMER
         self.timer = QTimer()
         self.timer.timeout.connect(self.refresh)
         self.timer.start(1500)
 
         self.refresh()
 
+    # -----------------------------
+    # ACTIONS
+    # -----------------------------
     def toggle_mode(self):
         control = read_json(CONTROL_FILE)
         if not control:
@@ -147,11 +174,15 @@ class ControlPage(QWidget):
 
         # MODE DISPLAY
         mode = control.get("mode", "AUTO")
-        color = theme.MODE_COLORS["PERFORMANCE"] if mode == "AUTO" else "#FFD166"
+        mode_color = (
+            theme.MODE_COLORS["PERFORMANCE"]
+            if mode == "AUTO"
+            else "#FFD166"
+        )
 
         self.mode_label.setText(f"CONTROL MODE: {mode}")
         self.mode_label.setStyleSheet(
-            f"font-size: 22px; font-weight: bold; color: {color};"
+            f"font-size: 22px; font-weight: bold; color: {mode_color};"
         )
 
         active = running_workloads()
@@ -160,11 +191,15 @@ class ControlPage(QWidget):
             self.update_card(card, wf in active)
 
     def update_card(self, card, is_on):
-        state_text = "ON" if is_on else "OFF"
-        color = theme.MODE_COLORS["PERFORMANCE"] if is_on else theme.TEXT_SECONDARY
+        if is_on:
+            text = "STATUS: ACTIVE"
+            color = theme.MODE_COLORS["PERFORMANCE"]
+        else:
+            text = "STATUS: INACTIVE"
+            color = theme.TEXT_SECONDARY
 
-        card.status.setText(f"STATUS: {state_text}")
+        card.status.setText(text)
         card.status.setStyleSheet(f"""
-            font-size: 16px;
+            font-size: 15px;
             color: {color};
         """)

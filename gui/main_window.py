@@ -1,7 +1,7 @@
 # gui/main_window.py
 
 from PySide6.QtWidgets import QWidget, QHBoxLayout, QStackedWidget
-from PySide6.QtCore import QTimer
+from PySide6.QtCore import Qt, QPropertyAnimation, QPoint, QEasingCurve
 
 from gui.nav_bar import NavBar
 from gui.pages.home import HomePage
@@ -26,7 +26,12 @@ class MainWindow(QWidget):
         self.nav = NavBar()
         self.stack = QStackedWidget()
 
-        # Pages
+        # Splash screen (boot phase)
+        self.splash = SplashWidget()
+        self.splash.boot_finished.connect(self.finish_boot)
+        self.stack.addWidget(self.splash)
+
+        # Main pages
         self.pages = {
             "home": HomePage(),
             "sensors": SensorsPage(),
@@ -34,10 +39,6 @@ class MainWindow(QWidget):
             "ai": AIPage(),
             "settings": SettingsPage()
         }
-
-        # Splash
-        self.splash = SplashWidget()
-        self.stack.addWidget(self.splash)
 
         for page in self.pages.values():
             self.stack.addWidget(page)
@@ -47,16 +48,26 @@ class MainWindow(QWidget):
         layout.addWidget(self.nav)
         layout.addWidget(self.stack)
 
-        # Boot state
+        # Initial boot state
         self.nav.hide()
         self.stack.setCurrentWidget(self.splash)
 
-        # End splash after 3 seconds
-        QTimer.singleShot(3000, self.finish_boot)
+    def animate_page(self, widget):
+        start_pos = widget.pos()
+        widget.move(start_pos.x() + 40, start_pos.y())
+
+        self.anim = QPropertyAnimation(widget, b"pos")
+        self.anim.setDuration(220)
+        self.anim.setStartValue(QPoint(start_pos.x() + 40, start_pos.y()))
+        self.anim.setEndValue(start_pos)
+        self.anim.setEasingCurve(QEasingCurve.InOutCubic)
+        self.anim.start()
 
     def finish_boot(self):
         self.nav.show()
         self.switch_page("home")
 
     def switch_page(self, page_name):
-        self.stack.setCurrentWidget(self.pages[page_name])
+        page = self.pages[page_name]
+        self.stack.setCurrentWidget(page)
+        self.animate_page(page)

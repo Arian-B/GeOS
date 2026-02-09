@@ -1,5 +1,6 @@
 {
   "mode": "AUTO",
   "irrigation": true,
-  "ventilation": false
+  "ventilation": false,
+  "forced_mode": "ENERGY_SAVER"
 }

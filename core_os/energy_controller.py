@@ -108,6 +108,26 @@ def run_os():
             if data["battery"] < 15:
                 raise_alert("WARN", "Battery level low")
 
+            control = read_control()
+
+            # ----- MAINTENANCE MODE -----
+            if control.get("maintenance"):
+                if CURRENT_MODE != ENERGY_SAVER:
+                    CURRENT_MODE = ENERGY_SAVER
+                    apply_mode(CURRENT_MODE)
+                time.sleep(3)
+                continue
+
+            # ----- USER FORCED MODE -----
+            forced = control.get("forced_mode")
+            if forced == "ENERGY_SAVER":
+                CURRENT_MODE = ENERGY_SAVER
+            elif forced == "PERFORMANCE":
+                CURRENT_MODE = PERFORMANCE
+            elif forced is None:
+                pass  # AI control resumes
+
+
             # ---------- ML THRESHOLD ADVISOR ----------
             adjusted_thresholds, ml_suggestion = adjust_thresholds(
                 data, BASE_THRESHOLDS
@@ -127,6 +147,8 @@ def run_os():
                 proposed_mode = PERFORMANCE
             else:
                 proposed_mode = BALANCED
+
+            state["last_ai_action_time"] = datetime.datetime.now().isoformat()
 
             # ---------- SAFETY OVERRIDE ----------
             guard_mode = safety_guard(data, adjusted_thresholds)

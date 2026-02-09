@@ -1,0 +1,6 @@
+{
+  "sensor": false,
+  "irrigation": false,
+  "camera": false,
+  "analytics": false
+}
