@@ -19,8 +19,18 @@ class RLAgent:
 
     def discretize_state(self, data):
         cpu = "HIGH" if data["cpu_percent"] > 60 else "MED" if data["cpu_percent"] > 25 else "LOW"
-        battery = "LOW" if data["battery"] < 30 else "MED" if data["battery"] < 70 else "HIGH"
-        soil = "DRY" if data["soil_moisture"] < 30 else "OK"
+
+        battery_val = data.get("battery")
+        if battery_val is None:
+            battery = "UNKNOWN"
+        else:
+            battery = "LOW" if battery_val < 30 else "MED" if battery_val < 70 else "HIGH"
+
+        soil_val = data.get("soil_moisture")
+        if soil_val is None:
+            soil = "UNKNOWN"
+        else:
+            soil = "DRY" if soil_val < 30 else "OK"
         time = "DAY" if 6 <= data["hour"] <= 18 else "NIGHT"
 
         return (cpu, battery, soil, time)

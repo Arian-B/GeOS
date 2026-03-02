@@ -16,6 +16,13 @@ def read_state():
     with open(STATE_FILE, "r") as f:
         return json.load(f)
 
+def read_control():
+    try:
+        with open(CONTROL_FILE, "r") as f:
+            return json.load(f)
+    except Exception:
+        return {}
+
 def write_control(control):
     with open(CONTROL_FILE, "w") as f:
         json.dump(control, f, indent=2)
@@ -87,22 +94,37 @@ class Dashboard(QWidget):
         self.ai_label.setText(f"AI SUGGESTION: {state['ml_suggested_mode']}")
 
         sensors = state["sensors"]
+        battery = sensors.get("battery")
+        battery_health = sensors.get("battery_health")
+        soil = sensors.get("soil_moisture")
+        temp = sensors.get("temperature")
+        humidity = sensors.get("humidity")
+
+        battery_text = f"{battery}%" if battery is not None else "N/A"
+        health_text = f"{battery_health}%" if battery_health is not None else "N/A"
+
         self.battery_label.setText(
-            f"Battery: {sensors.get('battery', '--')}% | "
-            f"Health: {sensors.get('battery_health', '--')}%"
+            f"Battery: {battery_text} | "
+            f"Health: {health_text}"
         )
 
         self.sensor_label.setText(
-            f"Soil: {sensors.get('soil_moisture', '--')}  "
-            f"Temp: {sensors.get('temperature', '--')}°C  "
-            f"Humidity: {sensors.get('humidity', '--')}%"
+            f"Soil: {soil if soil is not None else 'N/A'}  "
+            f"Temp: {str(temp) + '°C' if temp is not None else 'N/A'}  "
+            f"Humidity: {str(humidity) + '%' if humidity is not None else 'N/A'}"
         )
 
     def set_auto(self):
-        write_control({"auto_mode": True, "mode_override": None})
+        control = read_control()
+        control["mode"] = "AUTO"
+        control["forced_mode"] = None
+        write_control(control)
 
     def set_mode(self, mode):
-        write_control({"auto_mode": False, "mode_override": mode})
+        control = read_control()
+        control["mode"] = "MANUAL"
+        control["forced_mode"] = mode
+        write_control(control)
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

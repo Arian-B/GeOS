@@ -19,6 +19,17 @@ def read_state():
     except Exception:
         return {}
 
+def _safe_get_load_avg():
+    try:
+        return os.getloadavg()[0]
+    except (AttributeError, OSError):
+        try:
+            return psutil.getloadavg()[0]
+        except Exception:
+            cpu = psutil.cpu_percent(interval=None)
+            cores = psutil.cpu_count() or 1
+            return (cpu / 100.0) * cores
+
 def collect():
     state = read_state()
     sensors = state.get("sensors", {})
@@ -26,7 +37,7 @@ def collect():
     record = {
         "timestamp": datetime.datetime.now().isoformat(timespec="seconds"),
         "cpu_percent": psutil.cpu_percent(interval=None),
-        "load_avg": os.getloadavg()[0],
+        "load_avg": _safe_get_load_avg(),
         "memory_percent": psutil.virtual_memory().percent,
         "battery": sensors.get("battery"),
         "soil_moisture": sensors.get("soil_moisture"),

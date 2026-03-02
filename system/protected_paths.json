@@ -1,0 +1,15 @@
+{
+  "protected": [
+    "core_os",
+    "gui",
+    "control",
+    "state",
+    "logs",
+    "datasets",
+    "ml_engine",
+    "telemetry",
+    "workloads",
+    "sensors",
+    "interface"
+  ]
+}

@@ -35,6 +35,11 @@ def predict_mode(features: dict):
     Predict OS mode using ML policy.
     Input: dict with system + sensor features.
     """
+    # If critical features are missing, fall back to a neutral mode.
+    for key in FEATURES:
+        if features.get(key) is None:
+            return "BALANCED"
+
     model = load_model()
 
     X = pd.DataFrame([[features[f] for f in FEATURES]], columns=FEATURES)

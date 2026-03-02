@@ -14,15 +14,15 @@ def show_status():
 
 def set_manual_mode(mode):
     control = read_control()
-    control["auto_mode"] = False
-    control["mode_override"] = mode
+    control["mode"] = "MANUAL"
+    control["forced_mode"] = mode
     write_control(control)
     print(f"Manual override set to {mode}")
 
 def set_auto_mode():
     control = read_control()
-    control["auto_mode"] = True
-    control["mode_override"] = None
+    control["mode"] = "AUTO"
+    control["forced_mode"] = None
     write_control(control)
     print("Returned to AI-controlled auto mode")
 

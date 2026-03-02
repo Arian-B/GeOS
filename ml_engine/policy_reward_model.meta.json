@@ -1,0 +1,19 @@
+{
+  "trained_at": "2026-02-28T11:54:09",
+  "samples": 2005,
+  "features": [
+    "cpu_percent",
+    "load_avg",
+    "memory_percent",
+    "battery",
+    "soil_moisture",
+    "temperature",
+    "humidity",
+    "hour"
+  ],
+  "actions": [
+    "ENERGY_SAVER",
+    "BALANCED",
+    "PERFORMANCE"
+  ]
+}

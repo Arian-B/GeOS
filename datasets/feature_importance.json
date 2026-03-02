@@ -1,0 +1,34 @@
+[
+  {
+    "feature":"battery",
+    "importance":0.6539773776
+  },
+  {
+    "feature":"soil_moisture",
+    "importance":0.1438228264
+  },
+  {
+    "feature":"temperature",
+    "importance":0.0642764385
+  },
+  {
+    "feature":"memory_percent",
+    "importance":0.0600142792
+  },
+  {
+    "feature":"load_avg",
+    "importance":0.0307227673
+  },
+  {
+    "feature":"hour",
+    "importance":0.0286391745
+  },
+  {
+    "feature":"cpu_percent",
+    "importance":0.0185471364
+  },
+  {
+    "feature":"humidity",
+    "importance":0.0
+  }
+]

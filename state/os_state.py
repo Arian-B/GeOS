@@ -18,12 +18,27 @@ DEFAULT_STATE = {
     "forced_mode": None,
     "last_ai_action_time": None,
 
+    # Boot + recovery metadata
+    "boot_phase": "BOOTING",
+    "boot_message": None,
+    "recovery_mode": False,
+
     "ml_thresholds": {},
     "sensors": {}
 }
 
 def write_state(state):
     state["last_updated"] = datetime.now().isoformat()
+    existing = {}
+    if os.path.exists(STATE_FILE):
+        try:
+            with open(STATE_FILE, "r") as f:
+                existing = json.load(f)
+        except Exception:
+            existing = {}
+    if isinstance(existing, dict):
+        existing.update(state)
+        state = existing
     with open(STATE_FILE, "w") as f:
         json.dump(state, f, indent=2)
 

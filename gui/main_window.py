@@ -1,6 +1,6 @@
 # gui/main_window.py
 
-from PySide6.QtWidgets import QWidget, QHBoxLayout, QStackedWidget
+from PySide6.QtWidgets import QWidget, QHBoxLayout, QStackedWidget, QGraphicsOpacityEffect
 from PySide6.QtCore import Qt, QPropertyAnimation, QPoint, QEasingCurve
 
 from gui.nav_bar import NavBar
@@ -63,6 +63,20 @@ class MainWindow(QWidget):
         self.anim.setEasingCurve(QEasingCurve.InOutCubic)
         self.anim.start()
 
+    def fade_page(self, widget):
+        effect = widget.graphicsEffect()
+        if not isinstance(effect, QGraphicsOpacityEffect):
+            effect = QGraphicsOpacityEffect(widget)
+            widget.setGraphicsEffect(effect)
+
+        effect.setOpacity(0.0)
+        self.fade_anim = QPropertyAnimation(effect, b"opacity")
+        self.fade_anim.setDuration(220)
+        self.fade_anim.setStartValue(0.0)
+        self.fade_anim.setEndValue(1.0)
+        self.fade_anim.setEasingCurve(QEasingCurve.InOutCubic)
+        self.fade_anim.start()
+
     def finish_boot(self):
         self.nav.show()
         self.switch_page("home")
@@ -71,3 +85,4 @@ class MainWindow(QWidget):
         page = self.pages[page_name]
         self.stack.setCurrentWidget(page)
         self.animate_page(page)
+        self.fade_page(page)
