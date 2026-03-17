@@ -1,10 +1,10 @@
 {
-  "mode": "MANUAL",
-  "manual_override_mode": "PERFORMANCE",
+  "mode": "AUTO",
+  "manual_override_mode": null,
   "emergency_shutdown": false,
   "irrigation": true,
   "ventilation": true,
-  "forced_mode": "PERFORMANCE",
+  "forced_mode": null,
   "workloads": {
     "sensor": true,
     "irrigation": true,
