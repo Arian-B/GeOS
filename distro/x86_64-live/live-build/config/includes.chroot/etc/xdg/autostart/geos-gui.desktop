@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=GeOS
+Comment=Launch the GeOS demo shell
+Exec=/usr/local/bin/geos-launch-gui
+X-GNOME-Autostart-enabled=true
+Terminal=false

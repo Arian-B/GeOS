@@ -1,0 +1,100 @@
+{
+  "model_type": "LightGBMClassifier",
+  "trained_at": "2026-03-17T01:16:54",
+  "dataset": "/root/GeOS/datasets/telemetry.csv",
+  "rows": 9460,
+  "features": [
+    "cpu_percent",
+    "cpu_percent_avg",
+    "cpu_percent_delta",
+    "load_avg",
+    "load_avg_avg",
+    "load_avg_delta",
+    "memory_percent",
+    "memory_percent_avg",
+    "memory_percent_delta",
+    "battery",
+    "battery_avg",
+    "battery_delta",
+    "soil_moisture",
+    "soil_moisture_avg",
+    "soil_moisture_delta",
+    "temperature",
+    "temperature_avg",
+    "temperature_delta",
+    "humidity",
+    "humidity_avg",
+    "humidity_delta",
+    "hour",
+    "hour_sin",
+    "hour_cos",
+    "network_online",
+    "control_auto",
+    "control_manual",
+    "maintenance_enabled",
+    "safe_mode_enabled",
+    "emergency_shutdown_enabled",
+    "irrigation_enabled",
+    "ventilation_enabled",
+    "workload_sensor_enabled",
+    "workload_irrigation_enabled",
+    "workload_camera_enabled",
+    "workload_analytics_enabled",
+    "workload_enabled_count",
+    "workload_enabled_count_avg",
+    "workload_enabled_count_delta",
+    "workload_active_count",
+    "workload_active_count_avg",
+    "workload_active_count_delta",
+    "battery_low_streak",
+    "soil_dry_streak",
+    "temp_high_streak"
+  ],
+  "classes": [
+    "BALANCED",
+    "ENERGY_SAVER",
+    "PERFORMANCE"
+  ],
+  "accuracy": 0.9873,
+  "lightgbm_params": {
+    "objective": "multiclass",
+    "n_estimators": 300,
+    "learning_rate": 0.03,
+    "num_leaves": 31,
+    "subsample": 0.95,
+    "colsample_bytree": 0.8,
+    "random_state": 42,
+    "force_col_wise": true,
+    "verbosity": -1,
+    "min_child_samples": 40
+  },
+  "confidence_calibration": {
+    "method": "isotonic_on_top_probability",
+    "rows": 1514,
+    "raw_brier": 0.008518,
+    "calibrated_brier": 0.007409
+  },
+  "recommended_thresholds": {
+    "battery_energy_saver": 15.0,
+    "soil_performance": 43.27,
+    "temperature_energy_saver": 34.0
+  },
+  "notes": [
+    "Primary GeOS deployment model is LightGBM",
+    "Hard safety overrides remain outside the ML model",
+    "Temporal features are included via rolling averages and deltas",
+    "Confidence score is calibrated from a held-out calibration split when available"
+  ],
+  "registry_entry": {
+    "version_id": "20260317T011654",
+    "trained_at": "2026-03-17T01:16:54",
+    "model_type": "LightGBMClassifier",
+    "rows": 9460,
+    "accuracy": 0.9873,
+    "paths": {
+      "model": "/root/GeOS/ml_engine/model_registry/policy_model_20260317T011654.pkl",
+      "meta": "/root/GeOS/ml_engine/model_registry/policy_model_20260317T011654.meta.json",
+      "calibrator": "/root/GeOS/ml_engine/model_registry/policy_confidence_calibrator_20260317T011654.pkl"
+    }
+  }
+}

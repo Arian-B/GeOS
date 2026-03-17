@@ -1,0 +1,14 @@
+[Unit]
+Description=GeOS Update Watcher
+After=local-fs.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/geos
+Environment=PYTHONPATH=/opt/geos
+ExecStart=/opt/geos/.venv/bin/python -m core_os.update_watcher
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=geos-demo.target

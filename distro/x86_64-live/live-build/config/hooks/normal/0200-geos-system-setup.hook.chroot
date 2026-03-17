@@ -1,0 +1,42 @@
+#!/bin/sh
+set -eu
+
+mkdir -p /etc/systemd/system/multi-user.target.wants
+
+for unit in \
+  geos-demo.target \
+  geos-boot-manager.service \
+  geos-energy-controller.service \
+  geos-workload-manager.service \
+  geos-telemetry.service \
+  geos-resource-daemon.service \
+  geos-update-watcher.service \
+  geos-workflow-api.service \
+  geos-repl.service \
+  geos-metrics.service
+do
+  systemctl enable "$unit"
+done
+
+mkdir -p /etc/lightdm/lightdm.conf.d
+cat >/etc/lightdm/lightdm.conf.d/50-geos-autologin.conf <<'EOF'
+[Seat:*]
+autologin-user=geos
+autologin-user-timeout=0
+user-session=openbox
+greeter-hide-users=false
+EOF
+
+id -u geos >/dev/null 2>&1 || useradd -m -s /bin/bash geos
+usermod -aG sudo geos || true
+
+mkdir -p /opt/geos/logs /opt/geos/state /opt/geos/datasets /opt/geos/control
+chown -R geos:geos /opt/geos
+
+if [ ! -x /opt/geos/.venv/bin/python ]; then
+  python3 -m venv /opt/geos/.venv
+fi
+
+/opt/geos/.venv/bin/pip install --upgrade pip
+/opt/geos/.venv/bin/pip install \
+  psutil pandas joblib scikit-learn lightgbm PySide6

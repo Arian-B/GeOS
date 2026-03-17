@@ -1,0 +1,14 @@
+[Unit]
+Description=GeOS Workflow API
+After=geos-energy-controller.service
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/geos
+Environment=PYTHONPATH=/opt/geos
+ExecStart=/opt/geos/.venv/bin/python -m interface.workflow_server
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=geos-demo.target

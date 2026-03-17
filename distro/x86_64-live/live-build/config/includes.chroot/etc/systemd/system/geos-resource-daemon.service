@@ -1,0 +1,15 @@
+[Unit]
+Description=GeOS Resource Daemon
+After=geos-energy-controller.service
+Requires=geos-energy-controller.service
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/geos
+Environment=PYTHONPATH=/opt/geos
+ExecStart=/opt/geos/.venv/bin/python -m core_os.resource_daemon
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=geos-demo.target

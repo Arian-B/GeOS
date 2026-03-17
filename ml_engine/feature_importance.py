@@ -1,83 +1,58 @@
-# ml_engine/feature_importance.py
-"""
-Feature importance extractor for GeOS ML policy model.
-
-Outputs:
-- Console ranking (for demo/review)
-- CSV file (for plots / paper)
-- JSON file (for GUI consumption)
-"""
-
-import os
 import json
-import joblib
-import pandas as pd
+import os
 
-# -----------------------------
-# PATHS
-# -----------------------------
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-MODEL_FILE = os.path.join(BASE_DIR, "ml_engine", "policy_model.pkl")
-OUT_DIR = os.path.join(BASE_DIR, "datasets")
+try:
+    import joblib
+    from sklearn.inspection import permutation_importance
+except Exception:
+    joblib = None
+    permutation_importance = None
 
-os.makedirs(OUT_DIR, exist_ok=True)
+from ml_engine.lightgbm_policy import FEATURE_IMPORTANCE_FILE, MODEL_FILE
 
-CSV_OUT = os.path.join(OUT_DIR, "feature_importance.csv")
-JSON_OUT = os.path.join(OUT_DIR, "feature_importance.json")
 
-# -----------------------------
-# FEATURE LIST (MUST MATCH TRAINING)
-# -----------------------------
-FEATURES = [
-    "cpu_percent",
-    "load_avg",
-    "memory_percent",
-    "battery",
-    "soil_moisture",
-    "temperature",
-    "humidity",
-    "hour"
-]
+def main():
+    if joblib is None:
+        raise RuntimeError("joblib is required to inspect model feature importance")
+    if not os.path.exists(MODEL_FILE):
+        raise FileNotFoundError(f"Model not found: {MODEL_FILE}")
 
-# -----------------------------
-# LOAD MODEL
-# -----------------------------
-if not os.path.exists(MODEL_FILE):
-    raise FileNotFoundError(f"Model not found: {MODEL_FILE}")
+    model = joblib.load(MODEL_FILE)
+    estimator = getattr(model, "named_steps", {}).get("model", model)
+    feature_names = getattr(model, "feature_names_in_", None)
+    if feature_names is None and hasattr(model, "named_steps"):
+        feature_names = getattr(model.named_steps.get("model"), "feature_name_", None)
+    importances = getattr(estimator, "feature_importances_", None)
+    if importances is None and permutation_importance is not None:
+        raise RuntimeError(
+            "This model does not expose direct feature importances. "
+            "Regenerate importance during training or provide an evaluation dataset."
+        )
 
-model = joblib.load(MODEL_FILE)
+    if importances is None:
+        raise RuntimeError("Loaded model does not expose feature_importances_")
+    if feature_names is None:
+        feature_names = [f"feature_{idx}" for idx in range(len(importances))]
 
-if not hasattr(model, "feature_importances_"):
-    raise RuntimeError("Loaded model does not expose feature_importances_")
+    total = float(sum(importances)) or 1.0
+    rows = [
+        {"feature": str(name), "importance": round(float(score) / total, 6)}
+        for name, score in sorted(
+            zip(feature_names, importances),
+            key=lambda item: item[1],
+            reverse=True,
+        )
+    ]
 
-importances = model.feature_importances_
+    os.makedirs(os.path.dirname(FEATURE_IMPORTANCE_FILE), exist_ok=True)
+    with open(FEATURE_IMPORTANCE_FILE, "w") as f:
+        json.dump(rows, f, indent=2)
 
-# -----------------------------
-# BUILD DATAFRAME
-# -----------------------------
-df = pd.DataFrame({
-    "feature": FEATURES,
-    "importance": importances
-})
+    print("[ML] Feature importance ranking")
+    for row in rows[:10]:
+        print(f"{row['feature']}: {row['importance']:.4f}")
+    print(f"[ML] Saved to {FEATURE_IMPORTANCE_FILE}")
 
-# Normalize for readability (sum = 1)
-df["importance"] = df["importance"] / df["importance"].sum()
 
-df = df.sort_values(by="importance", ascending=False).reset_index(drop=True)
-
-# -----------------------------
-# SAVE OUTPUTS
-# -----------------------------
-df.to_csv(CSV_OUT, index=False)
-df.to_json(JSON_OUT, orient="records", indent=2)
-
-# -----------------------------
-# CONSOLE OUTPUT (REVIEW FRIENDLY)
-# -----------------------------
-print("\n[ML] Feature Importance Ranking")
-print("--------------------------------")
-print(df.to_string(index=False))
-
-print(f"\n[ML] Saved:")
-print(f" - CSV : {CSV_OUT}")
-print(f" - JSON: {JSON_OUT}")
+if __name__ == "__main__":
+    main()

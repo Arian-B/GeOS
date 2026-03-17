@@ -1,0 +1,14 @@
+[Unit]
+Description=GeOS REPL Server
+After=geos-energy-controller.service
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/geos
+Environment=PYTHONPATH=/opt/geos
+ExecStart=/opt/geos/.venv/bin/python -m interface.repl_server
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=geos-demo.target

@@ -11,6 +11,7 @@ from gui.main_window import MainWindow
 
 STARTED_SERVICE_PROCESSES = []
 _SERVICES_STARTED = False
+SYSTEMD_MANAGED_ENV = "GEOS_MANAGED_BY_SYSTEMD"
 SERVICE_ENTRIES = [
     {
         "name": "boot_manager",
@@ -89,6 +90,8 @@ def start_background_services():
     """
     global _SERVICES_STARTED
     if _SERVICES_STARTED:
+        return
+    if str(os.environ.get(SYSTEMD_MANAGED_ENV, "")).strip().lower() in ("1", "true", "yes", "on"):
         return
 
     project_root = _project_root()
@@ -180,7 +183,8 @@ def main():
     # Ensure backend services are up before any GUI (including splash) loads.
     start_background_services()
     app = QApplication(sys.argv)
-    app.aboutToQuit.connect(_shutdown_background_services)
+    if str(os.environ.get(SYSTEMD_MANAGED_ENV, "")).strip().lower() not in ("1", "true", "yes", "on"):
+        app.aboutToQuit.connect(_shutdown_background_services)
     window = MainWindow()
     window.show()
     sys.exit(app.exec())

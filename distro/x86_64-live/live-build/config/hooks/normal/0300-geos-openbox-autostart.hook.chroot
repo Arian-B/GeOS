@@ -1,0 +1,10 @@
+#!/bin/sh
+set -eu
+
+mkdir -p /home/geos/.config/openbox
+cat >/home/geos/.config/openbox/autostart <<'EOF'
+xset -dpms
+xset s off
+xset s noblank
+EOF
+chown -R geos:geos /home/geos/.config

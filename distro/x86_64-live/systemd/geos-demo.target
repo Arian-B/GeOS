@@ -1,0 +1,16 @@
+[Unit]
+Description=GeOS Demo Runtime Target
+Wants=geos-boot-manager.service
+Wants=geos-energy-controller.service
+Wants=geos-workload-manager.service
+Wants=geos-telemetry.service
+Wants=geos-resource-daemon.service
+Wants=geos-update-watcher.service
+Wants=geos-workflow-api.service
+Wants=geos-repl.service
+Wants=geos-metrics.service
+After=network-online.target
+Wants=network-online.target
+
+[Install]
+WantedBy=multi-user.target

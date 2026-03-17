@@ -1,27 +1,25 @@
 # core_os/energy_controller.py
 
-import psutil
-import os
-import time
 import datetime
 import json
+import os
 import sys
+import time
+
+import psutil
 
 # Ensure project root is on sys.path when running as a script.
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
-from ml_engine.rl_agent import RLAgent
-from ml_engine.reward_model import compute_reward
-
 from control.os_control import read_control
 from core_os.energy_modes import ENERGY_SAVER, BALANCED, PERFORMANCE, BASE_THRESHOLDS
-from sensors.sensor_simulator import SensorState
-from logs.os_logger import log_event
-from ml_engine.threshold_advisor import adjust_thresholds
-from ml_engine.policy_optimizer import predict_best_mode
 from ml_engine.auto_trainer import start_auto_trainer
+from ml_engine.lightgbm_policy import current_thresholds, predict_policy
+from ml_engine.policy_features import PolicyFeatureBuilder
+from logs.os_logger import log_event
+from sensors.sensor_simulator import SensorState
 from state.os_state import write_state
 from core_os.notifications import raise_alert
 from core_os.network import is_connected
@@ -45,11 +43,9 @@ CURRENT_MODE = BALANCED
 # Mode stability lock: prevents rapid oscillations between modes.
 MODE_LOCK_COUNTER = 0
 sensors = SensorState()
-
-# RL AGENT
-rl_agent = RLAgent()
-prev_state = None
-prev_action = None
+feature_builder = PolicyFeatureBuilder()
+BASE_DIR = PROJECT_ROOT
+WORKLOAD_STATE_FILE = os.path.join(BASE_DIR, "workloads", "workload_state.json")
 
 
 # -----------------------------
@@ -147,12 +143,46 @@ def _safe_get_load_avg():
             return (cpu / 100.0) * cores
 
 
+def _read_json(path):
+    try:
+        with open(path, "r") as f:
+            data = json.load(f)
+        return data if isinstance(data, dict) else {}
+    except Exception:
+        return {}
+
+
+def _augment_policy_context(data, control):
+    workloads = control.get("workloads", {}) if isinstance(control.get("workloads"), dict) else {}
+    workload_state = _read_json(WORKLOAD_STATE_FILE)
+
+    data["control_auto"] = control.get("mode", "AUTO") == "AUTO"
+    data["control_manual"] = control.get("mode") == "MANUAL"
+    data["maintenance_enabled"] = bool(control.get("maintenance", False))
+    data["safe_mode_enabled"] = bool(control.get("safe_mode", False))
+    data["emergency_shutdown_enabled"] = bool(control.get("emergency_shutdown", False))
+    data["irrigation_enabled"] = bool(control.get("irrigation", False))
+    data["ventilation_enabled"] = bool(control.get("ventilation", False))
+    data["workload_sensor_enabled"] = bool(workloads.get("sensor", True))
+    data["workload_irrigation_enabled"] = bool(workloads.get("irrigation", True))
+    data["workload_camera_enabled"] = bool(workloads.get("camera", True))
+    data["workload_analytics_enabled"] = bool(workloads.get("analytics", True))
+    data["workload_enabled_count"] = sum(
+        1 for name in ("sensor", "irrigation", "camera", "analytics") if workloads.get(name)
+    )
+    data["workload_active_count"] = sum(
+        1 for name in ("sensor", "irrigation", "camera", "analytics") if workload_state.get(name)
+    )
+    return data
+
+
 # -----------------------------
 # SAFETY / RULE-BASED GUARD
 # -----------------------------
 def safety_guard(sensor_data, adjusted_thresholds):
     battery = sensor_data.get("battery")
     soil = sensor_data.get("soil_moisture")
+    temperature = sensor_data.get("temperature")
 
     # Hard safety constraints
     if battery is not None and battery < 10:
@@ -164,14 +194,72 @@ def safety_guard(sensor_data, adjusted_thresholds):
     if soil is not None and soil < adjusted_thresholds["soil_performance"]:
         return PERFORMANCE
 
+    temp_threshold = adjusted_thresholds.get("temperature_energy_saver")
+    if temperature is not None and temp_threshold is not None and temperature > temp_threshold:
+        return ENERGY_SAVER
+
     return None  # no override
+
+
+def evaluate_control_decision(data, control, policy_features, current_mode, mode_lock_counter):
+    mode_setting = control.get("mode", "AUTO")
+    manual_override_name = control.get("manual_override_mode")
+    if manual_override_name is None:
+        manual_override_name = control.get("forced_mode")
+    manual_override_mode = (
+        _mode_from_name(manual_override_name) if mode_setting == "MANUAL" else None
+    )
+
+    adjusted_thresholds = dict(BASE_THRESHOLDS)
+    adjusted_thresholds.update(current_thresholds())
+    policy_decision = predict_policy(policy_features)
+    ml_best_mode = policy_decision.get("mode", "BALANCED")
+    ml_confidence = policy_decision.get("confidence", 0.0)
+    ml_raw_confidence = policy_decision.get("raw_confidence", ml_confidence)
+    ml_confidence_source = policy_decision.get("confidence_source", "MODEL_PROBABILITY")
+    policy_source = policy_decision.get("source", "FALLBACK")
+    top_features = policy_decision.get("top_features", [])
+
+    if manual_override_mode is not None:
+        proposed_mode = manual_override_mode
+        policy_source = "MANUAL_OVERRIDE"
+    else:
+        proposed_mode = _mode_from_name(ml_best_mode) or BALANCED
+
+    guard_mode = safety_guard(data, adjusted_thresholds)
+    new_mode = guard_mode if guard_mode else proposed_mode
+    reason_codes = []
+
+    if manual_override_mode is not None:
+        reason_codes.append("manual_override")
+    if guard_mode is not None:
+        reason_codes.append("safety_override")
+        policy_source = "SAFETY_OVERRIDE"
+    elif policy_source == "LIGHTGBM":
+        reason_codes.append("lightgbm_policy")
+
+    if guard_mode is None and mode_lock_counter > 0 and new_mode != current_mode:
+        new_mode = current_mode
+        reason_codes.append("mode_lock")
+
+    return {
+        "new_mode": new_mode,
+        "ml_suggested_mode": ml_best_mode,
+        "ml_confidence": ml_confidence,
+        "ml_raw_confidence": ml_raw_confidence,
+        "ml_confidence_source": ml_confidence_source,
+        "policy_source": policy_source,
+        "ml_thresholds": adjusted_thresholds,
+        "ml_top_features": top_features,
+        "ml_reason_codes": reason_codes,
+    }
 
 
 # -----------------------------
 # OS MAIN LOOP
 # -----------------------------
 def run_os():
-    global CURRENT_MODE, prev_state, prev_action, MODE_LOCK_COUNTER
+    global CURRENT_MODE, MODE_LOCK_COUNTER
 
     print("[OS] GeOS Energy Controller started")
     # Start background ML trainer (non-blocking).
@@ -195,9 +283,6 @@ def run_os():
             # ---------- NETWORK ----------
             data["network"] = "ONLINE" if is_connected() else "OFFLINE"
 
-            log_event("SENSOR_READ", data)
-            print(f"[OS] Sensor data: {data}")
-
             # ---------- ALERTS ----------
             if data.get("soil_moisture") is not None and data["soil_moisture"] < 15:
                 raise_alert("CRITICAL", "Soil moisture critically low")
@@ -209,6 +294,12 @@ def run_os():
                 raise_alert("WARN", "Battery level low")
 
             control = read_control()
+            data = _augment_policy_context(data, control)
+            feature_builder.add_snapshot(data)
+            policy_features = feature_builder.current_features()
+
+            log_event("SENSOR_READ", data)
+            print(f"[OS] Sensor data: {data}")
 
             # ----- EMERGENCY SHUTDOWN -----
             if control.get("emergency_shutdown"):
@@ -224,9 +315,13 @@ def run_os():
                 state = {
                     "current_mode": CURRENT_MODE["name"],
                     "ml_suggested_mode": "EMERGENCY",
-                    "rl_action": "EMERGENCY",
+                    "ml_confidence": 1.0,
+                    "ml_raw_confidence": 1.0,
+                    "ml_confidence_source": "RULE_BASED",
+                    "policy_source": "EMERGENCY",
                     "ml_thresholds": {},
                     "sensors": data,
+                    "ml_reason_codes": ["emergency_shutdown"],
                     "last_ai_action_time": datetime.datetime.now().isoformat()
                 }
                 write_state(state)
@@ -254,9 +349,13 @@ def run_os():
                 state = {
                     "current_mode": CURRENT_MODE["name"],
                     "ml_suggested_mode": "MAINTENANCE",
-                    "rl_action": "MAINTENANCE",
+                    "ml_confidence": 1.0,
+                    "ml_raw_confidence": 1.0,
+                    "ml_confidence_source": "RULE_BASED",
+                    "policy_source": "MAINTENANCE",
                     "ml_thresholds": {},
                     "sensors": data,
+                    "ml_reason_codes": ["maintenance_mode"],
                     "last_ai_action_time": datetime.datetime.now().isoformat()
                 }
                 write_state(state)
@@ -272,65 +371,33 @@ def run_os():
                 time.sleep(3)
                 continue
 
-            # ----- USER MANUAL OVERRIDE -----
-            mode_setting = control.get("mode", "AUTO")
-            manual_override_name = control.get("manual_override_mode")
-            if manual_override_name is None:
-                manual_override_name = control.get("forced_mode")
-            manual_override_mode = (
-                _mode_from_name(manual_override_name) if mode_setting == "MANUAL" else None
+            decision = evaluate_control_decision(
+                data=data,
+                control=control,
+                policy_features=policy_features,
+                current_mode=CURRENT_MODE,
+                mode_lock_counter=MODE_LOCK_COUNTER,
             )
-
-
-            # ---------- ML THRESHOLD ADVISOR ----------
-            adjusted_thresholds, ml_suggestion = adjust_thresholds(
-                data, BASE_THRESHOLDS
-            )
-
-            # ---------- ML OPTIMIZER ----------
-            ml_best_mode, ml_confidence = predict_best_mode(data)
-            if ml_best_mode is None:
-                ml_best_mode = ml_suggestion
+            adjusted_thresholds = decision["ml_thresholds"]
+            ml_best_mode = decision["ml_suggested_mode"]
+            ml_confidence = decision["ml_confidence"]
+            policy_source = decision["policy_source"]
+            top_features = decision["ml_top_features"]
+            new_mode = decision["new_mode"]
+            reason_codes = decision["ml_reason_codes"]
 
             log_event(
                 "ML_PREDICTION",
                 {
                     "suggested_mode": ml_best_mode,
                     "confidence": ml_confidence,
-                    "threshold_mode": ml_suggestion
+                    "policy_source": policy_source,
+                    "top_features": top_features,
                 }
             )
             log_event("ML_THRESHOLD_ADJUSTMENT", adjusted_thresholds)
 
-            # ---------- RL STATE ----------
-            state_repr = rl_agent.discretize_state(data)
-            rl_action = rl_agent.choose_action(state_repr)
-
-            # Map RL action → mode
-            if rl_action == "ENERGY_SAVER":
-                proposed_mode = ENERGY_SAVER
-            elif rl_action == "PERFORMANCE":
-                proposed_mode = PERFORMANCE
-            else:
-                proposed_mode = BALANCED
-            # Combine ML optimizer + RL (manual override still wins)
-            if manual_override_mode is not None:
-                proposed_mode = manual_override_mode
-            else:
-                if rl_action == ml_best_mode:
-                    proposed_mode = _mode_from_name(ml_best_mode) or proposed_mode
-                elif ml_confidence >= 0.6:
-                    proposed_mode = _mode_from_name(ml_best_mode) or proposed_mode
-
-            # ---------- SAFETY OVERRIDE ----------
-            guard_mode = safety_guard(data, adjusted_thresholds)
-            new_mode = guard_mode if guard_mode else proposed_mode
-
             # ---------- APPLY MODE ----------
-            # Mode stability lock: prevent oscillations, but always allow safety overrides.
-            if guard_mode is None and MODE_LOCK_COUNTER > 0 and new_mode != CURRENT_MODE:
-                new_mode = CURRENT_MODE
-
             if new_mode != CURRENT_MODE:
                 CURRENT_MODE = new_mode
                 apply_mode(CURRENT_MODE)
@@ -338,23 +405,18 @@ def run_os():
                 MODE_LOCK_COUNTER = 3
                 switched_this_cycle = True
 
-            # ---------- RL LEARNING ----------
-            if prev_state is not None and prev_action is not None:
-                reward = compute_reward(prev_state, prev_action)
-                rl_agent.update(prev_state, prev_action, reward, state_repr)
-                rl_agent.save()
-
-            prev_state = state_repr
-            prev_action = rl_action
-
             # ---------- WRITE OS STATE ----------
             state = {
                 "current_mode": CURRENT_MODE["name"],
                 "ml_suggested_mode": ml_best_mode,
                 "ml_confidence": ml_confidence,
-                "ml_threshold_mode": ml_suggestion,
-                "rl_action": rl_action,
+                "ml_raw_confidence": decision["ml_raw_confidence"],
+                "ml_confidence_source": decision["ml_confidence_source"],
+                "ml_threshold_mode": ml_best_mode,
+                "policy_source": policy_source,
                 "ml_thresholds": adjusted_thresholds,
+                "ml_top_features": top_features,
+                "ml_reason_codes": reason_codes,
                 "sensors": data,
                 "last_ai_action_time": datetime.datetime.now().isoformat()
             }

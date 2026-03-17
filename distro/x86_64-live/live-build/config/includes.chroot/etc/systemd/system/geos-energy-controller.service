@@ -1,0 +1,16 @@
+[Unit]
+Description=GeOS Energy Controller
+After=geos-boot-manager.service
+Requires=geos-boot-manager.service
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/geos
+Environment=PYTHONPATH=/opt/geos
+Environment=GEOS_DISABLE_AUTO_TRAINER=1
+ExecStart=/opt/geos/.venv/bin/python -m core_os.energy_controller
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=geos-demo.target

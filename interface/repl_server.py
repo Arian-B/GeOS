@@ -18,7 +18,7 @@ def _format_status():
     lines = [
         f"MODE: {state.get('current_mode')}",
         f"ML: {state.get('ml_suggested_mode')}",
-        f"RL: {state.get('rl_action')}",
+        f"POLICY: {state.get('policy_source')}",
         f"CONTROL: {control.get('mode')}",
         f"MAINTENANCE: {control.get('maintenance')}",
     ]

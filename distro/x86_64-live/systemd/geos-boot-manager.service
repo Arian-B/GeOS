@@ -1,0 +1,14 @@
+[Unit]
+Description=GeOS Boot Manager
+After=local-fs.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/geos
+Environment=PYTHONPATH=/opt/geos
+ExecStart=/opt/geos/.venv/bin/python -m core_os.boot_manager
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=geos-demo.target

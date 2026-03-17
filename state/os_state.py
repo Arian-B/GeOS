@@ -11,7 +11,12 @@ STATE_FILE = os.path.join(BASE_DIR, "state", "os_state.json")
 DEFAULT_STATE = {
     "current_mode": "BOOTING",
     "ml_suggested_mode": None,
-    "rl_action": None,
+    "ml_confidence": None,
+    "ml_raw_confidence": None,
+    "ml_confidence_source": None,
+    "policy_source": None,
+    "ml_top_features": [],
+    "ml_reason_codes": [],
 
     # New additions (safe defaults)
     "maintenance_mode": False,
@@ -29,6 +34,7 @@ DEFAULT_STATE = {
 
 def write_state(state):
     state["last_updated"] = datetime.now().isoformat()
+    state.pop("rl_action", None)
     existing = {}
     if os.path.exists(STATE_FILE):
         try:
@@ -39,6 +45,8 @@ def write_state(state):
     if isinstance(existing, dict):
         existing.update(state)
         state = existing
+    if isinstance(state, dict):
+        state.pop("rl_action", None)
     with open(STATE_FILE, "w") as f:
         json.dump(state, f, indent=2)
 
@@ -49,6 +57,8 @@ def read_state():
 
     with open(STATE_FILE, "r") as f:
         data = json.load(f)
+    if isinstance(data, dict) and "rl_action" in data:
+        data.pop("rl_action", None)
 
     # Forward compatibility: add missing keys
     for k, v in DEFAULT_STATE.items():

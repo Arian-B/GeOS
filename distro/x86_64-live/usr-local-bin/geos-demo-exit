@@ -1,0 +1,10 @@
+#!/bin/sh
+set -eu
+
+if command -v zenity >/dev/null 2>&1; then
+  zenity --question \
+    --title="Exit GeOS Demo" \
+    --text="To return to the native OS, shut down or reboot now, then remove the GeOS USB."
+fi
+
+systemctl poweroff
