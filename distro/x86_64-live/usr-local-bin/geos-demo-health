@@ -1,0 +1,24 @@
+#!/bin/sh
+set -eu
+
+echo "GeOS demo health check"
+echo
+
+for unit in \
+  geos-boot-manager.service \
+  geos-energy-controller.service \
+  geos-workload-manager.service \
+  geos-telemetry.service \
+  geos-resource-daemon.service \
+  geos-update-watcher.service \
+  geos-workflow-api.service \
+  geos-repl.service \
+  geos-metrics.service
+do
+  state="$(systemctl is-active "$unit" 2>/dev/null || true)"
+  printf '%-32s %s\n' "$unit" "${state:-unknown}"
+done
+
+echo
+echo "Workflow API:  http://127.0.0.1:8080/status"
+echo "Metrics API:   http://127.0.0.1:8090/metrics"

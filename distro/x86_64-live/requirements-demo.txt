@@ -1,0 +1,6 @@
+psutil
+pandas
+joblib
+scikit-learn
+lightgbm
+PySide6

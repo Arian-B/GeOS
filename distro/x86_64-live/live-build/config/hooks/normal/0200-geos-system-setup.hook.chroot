@@ -37,6 +37,14 @@ if [ ! -x /opt/geos/.venv/bin/python ]; then
   python3 -m venv /opt/geos/.venv
 fi
 
-/opt/geos/.venv/bin/pip install --upgrade pip
-/opt/geos/.venv/bin/pip install \
-  psutil pandas joblib scikit-learn lightgbm PySide6
+/opt/geos/.venv/bin/pip install --no-cache-dir --upgrade pip
+/opt/geos/.venv/bin/pip install --no-cache-dir -r /opt/geos/distro/x86_64-live/requirements-demo.txt
+
+plymouth-set-default-theme -R geos
+
+mkdir -p /etc/systemd/system/getty@tty1.service.d
+cat >/etc/systemd/system/getty@tty1.service.d/10-geos-autologin.conf <<'EOF'
+[Service]
+ExecStart=
+ExecStart=-/sbin/agetty --autologin geos --noclear %I $TERM
+EOF

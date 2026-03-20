@@ -14,7 +14,7 @@ LB_APT_INDICES="true"
 
 # $LB_BOOTAPPEND_LIVE: set boot parameters
 # (Default: empty)
-LB_BOOTAPPEND_LIVE=""
+LB_BOOTAPPEND_LIVE="boot=live components quiet splash username=geos hostname=geos noeject"
 
 # $LB_BOOTAPPEND_INSTALL: set boot parameters
 # (Default: empty)
@@ -66,28 +66,28 @@ LB_DEBIAN_INSTALLER_GUI="true"
 LB_GRUB_SPLASH=""
 
 # $LB_HDD_LABEL: set hdd label
-# (Default: DEBIAN_LIVE)
-LB_HDD_LABEL="DEBIAN_LIVE"
+# (Default: GEOS_LIVE)
+LB_HDD_LABEL="GEOS_LIVE"
 
 # $LB_HDD_SIZE: set hdd filesystem size
 # (Default: 10000)
 LB_HDD_SIZE="10000"
 
 # $LB_ISO_APPLICATION: set iso author
-# (Default: Debian Live)
-LB_ISO_APPLICATION="Debian Live"
+# (Default: GeOS Live)
+LB_ISO_APPLICATION="GeOS Live"
 
 # $LB_ISO_PREPARER: set iso preparer
 # (Default: live-build 3.0~a57-1; http://packages.qa.debian.org/live-build)
 LB_ISO_PREPARER="live-build 3.0~a57-1; http://packages.qa.debian.org/live-build"
 
 # $LB_ISO_PUBLISHER: set iso publisher
-# (Default: Debian Live project; http://live.debian.net/; debian-live@lists.debian.org)
-LB_ISO_PUBLISHER="Debian Live project; http://live.debian.net/; debian-live@lists.debian.org"
+# (Default: GeOS)
+LB_ISO_PUBLISHER="GeOS"
 
 # $LB_ISO_VOLUME: set iso volume (max 32 chars)
-# (Default: Debian bookworm 20260317-11:09)
-LB_ISO_VOLUME="Debian bookworm 20260317-11:09"
+# (Default: GEOS_LIVE)
+LB_ISO_VOLUME="GEOS_LIVE"
 
 # $LB_EXT_BLOCKSIZE: set EXT block size
 # (Default: unset)

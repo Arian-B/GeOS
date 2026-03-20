@@ -4,6 +4,7 @@ set -eu
 export PYTHONPATH=/opt/geos${PYTHONPATH:+:$PYTHONPATH}
 export GEOS_MANAGED_BY_SYSTEMD=1
 export GEOS_DISABLE_AUTO_TRAINER=1
+export QT_QPA_PLATFORM=xcb
 
 cd /opt/geos
 exec /opt/geos/.venv/bin/python -m gui.app

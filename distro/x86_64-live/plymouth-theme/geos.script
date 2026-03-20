@@ -1,0 +1,52 @@
+Window.SetBackgroundTopColor(0.04, 0.18, 0.16);
+Window.SetBackgroundBottomColor(0.02, 0.09, 0.08);
+
+logo = Image.Text("GeOS", 1, 1, 1);
+subtitle = Image.Text("adaptive farming operating system", 0.60, 0.85, 0.80);
+message = Image.Text("starting system services...", 0.55, 0.85, 0.72);
+
+logo_sprite = Sprite(logo);
+logo_sprite.SetX(Window.GetWidth() / 2 - logo.GetWidth() / 2);
+logo_sprite.SetY(Window.GetHeight() * 0.36);
+
+subtitle_sprite = Sprite(subtitle);
+subtitle_sprite.SetX(Window.GetWidth() / 2 - subtitle.GetWidth() / 2);
+subtitle_sprite.SetY(Window.GetHeight() * 0.36 + 82);
+
+message_sprite = Sprite(message);
+message_sprite.SetX(Window.GetWidth() / 2 - message.GetWidth() / 2);
+message_sprite.SetY(Window.GetHeight() * 0.36 + 126);
+
+bar_width = Window.GetWidth() * 0.32;
+if (bar_width < 320) bar_width = 320;
+bar_height = 18;
+bar_x = Window.GetWidth() / 2 - bar_width / 2;
+bar_y = Window.GetHeight() * 0.36 + 172;
+
+fun draw_box(x, y, width, height, r, g, b)
+{
+  box = Image(width, height);
+  box.SetSolidColor(r, g, b, 1.0);
+  sprite = Sprite(box);
+  sprite.SetX(x);
+  sprite.SetY(y);
+  return sprite;
+}
+
+bar_outer = draw_box(bar_x, bar_y, bar_width, bar_height, 0.10, 0.28, 0.24);
+bar_inner = draw_box(bar_x + 3, bar_y + 3, bar_width - 6, bar_height - 6, 0.03, 0.11, 0.10);
+bar_fill = draw_box(bar_x + 3, bar_y + 3, 4, bar_height - 6, 0.45, 0.78, 0.62);
+
+fun refresh_callback()
+{
+  progress = Plymouth.GetBootProgress();
+  if (progress < 0) progress = 0;
+  if (progress > 1) progress = 1;
+
+  fill_width = (bar_width - 6) * progress;
+  if (fill_width < 4) fill_width = 4;
+  bar_fill.SetImage(Image(fill_width, bar_height - 6));
+  bar_fill.GetImage().SetSolidColor(0.45, 0.78, 0.62, 1.0);
+}
+
+Plymouth.SetRefreshFunction(refresh_callback);

@@ -1,0 +1,16 @@
+#!/bin/sh
+set -eu
+
+rm -rf /opt/geos/logs/*
+rm -rf /opt/geos/datasets/*
+rm -rf /opt/geos/apps
+rm -rf /opt/geos/updates
+
+rm -f \
+  /opt/geos/state/boot_success.flag \
+  /opt/geos/state/boot_attempts.json \
+  /opt/geos/state/boot_state.json \
+  /opt/geos/state/device.json \
+  /opt/geos/state/kernel_tuning.json \
+  /opt/geos/state/os_state.json \
+  /opt/geos/workloads/workload_state.json

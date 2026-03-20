@@ -1,9 +1,11 @@
-from PySide6.QtWidgets import QWidget, QLabel, QVBoxLayout, QFrame, QPushButton, QHBoxLayout, QScrollArea, QScroller
-from PySide6.QtCore import QTimer, Qt
-from control.os_control import read_control, write_control
+import datetime
 import json
 import os
-import datetime
+
+from PySide6.QtCore import QTimer, Qt
+from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QPushButton, QScrollArea, QScroller, QVBoxLayout, QWidget
+
+from control.os_control import read_control, write_control
 from core_os.notifications import get_latest_alert
 from gui import theme
 
@@ -35,14 +37,8 @@ def read_json(path):
 
 
 def read_workload_state():
-    try:
-        with open(WORKLOAD_STATE_FILE, "r") as f:
-            data = json.load(f)
-        if isinstance(data, dict):
-            return data
-    except Exception:
-        pass
-    return {}
+    data = read_json(WORKLOAD_STATE_FILE)
+    return data if isinstance(data, dict) else {}
 
 
 def read_boot_state():
@@ -68,6 +64,7 @@ def read_update_info():
         pending = pending_data.get("slot") or "--"
     return current, pending
 
+
 def is_offline(state, max_age_seconds=20):
     if not state:
         return True
@@ -86,19 +83,80 @@ def is_offline(state, max_age_seconds=20):
         return True
 
 
+def level_color(level):
+    if level == "CRITICAL":
+        return theme.ACCENT_DANGER
+    if level == "WARN":
+        return theme.ACCENT_WARN
+    return theme.TEXT_SECONDARY
+
+
+class SummaryCard(QFrame):
+    def __init__(self, title, tone="normal"):
+        super().__init__()
+        self.setStyleSheet(
+            f"""
+            QFrame {{
+                background-color: {theme.BUTTON_BG};
+                border-radius: 12px;
+                border: none;
+            }}
+            """
+        )
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(18, 16, 18, 16)
+        layout.setSpacing(8)
+
+        self.title = QLabel(title)
+        self.title.setStyleSheet(f"font-size: 14px; color: {theme.TEXT_MUTED}; font-weight: bold;")
+        self.value = QLabel("--")
+        self.value.setStyleSheet("font-size: 26px; font-weight: bold;")
+        self.detail = QLabel("--")
+        self.detail.setWordWrap(True)
+        self.detail.setStyleSheet(f"font-size: 13px; color: {theme.TEXT_PRIMARY};")
+
+        layout.addWidget(self.title)
+        layout.addWidget(self.value)
+        layout.addWidget(self.detail)
+
+
 class HomePage(QWidget):
     def __init__(self):
         super().__init__()
 
-        self.setStyleSheet(f"""
+        self.setStyleSheet(
+            f"""
             QWidget {{
                 background-color: {theme.BACKGROUND};
                 font-family: {theme.MONO_FONT};
             }}
             QLabel {{
                 color: {theme.TEXT_PRIMARY};
+                border: none;
+                background: transparent;
             }}
-        """)
+            QPushButton {{
+                background-color: {theme.BUTTON_BG};
+                color: {theme.TEXT_PRIMARY};
+                border: 2px solid {theme.SHELL_BORDER};
+                border-bottom: 4px solid #051f1c;
+                border-radius: 8px;
+                padding: 10px 12px;
+            }}
+            QPushButton:hover {{
+                background-color: {theme.BUTTON_HOVER};
+                border: 2px solid {theme.TEXT_SECONDARY};
+                border-bottom: 4px solid #051f1c;
+            }}
+            QPushButton:pressed {{
+                background-color: {theme.BUTTON_ACTIVE};
+                border: 2px solid {theme.TEXT_PRIMARY};
+                border-bottom: 2px solid #051f1c;
+                padding-top: 12px;
+                padding-bottom: 8px;
+            }}
+            """
+        )
 
         outer = QVBoxLayout(self)
         outer.setContentsMargins(0, 0, 0, 0)
@@ -115,218 +173,93 @@ class HomePage(QWidget):
         self.scroll.setWidget(content)
         outer.addWidget(self.scroll)
 
-        self.main_layout = QVBoxLayout(content)
-        self.main_layout.setSpacing(14)
-        self.main_layout.setContentsMargins(30, 30, 30, 30)
+        self.layout = QVBoxLayout(content)
+        self.layout.setSpacing(16)
+        self.layout.setContentsMargins(24, 24, 24, 24)
 
-        # === HEADER ROW ===
-        self.mode_label = QLabel("MODE: --")
-        self.mode_label.setStyleSheet("font-size: 26px; font-weight: bold;")
+        self.title = QLabel("OVERVIEW")
+        self.title.setStyleSheet("font-size: 28px; font-weight: bold;")
+        self.layout.addWidget(self.title)
 
-        self.cursor_label = QLabel("_")
-        self.cursor_label.setStyleSheet(
-            f"font-size: 26px; font-weight: bold; color: {theme.RETRO_CURSOR_COLOR};"
+        self.subtitle = QLabel("Mission control for field health, power, watering, and live GeOS decisions.")
+        self.subtitle.setWordWrap(True)
+        self.subtitle.setStyleSheet(f"font-size: 13px; color: {theme.TEXT_MUTED};")
+        self.layout.addWidget(self.subtitle)
+
+        self.alert_banner = QLabel("Checking system state...")
+        self.alert_banner.setWordWrap(True)
+        self.alert_banner.setStyleSheet(
+            f"""
+            font-size: 14px;
+            font-weight: bold;
+            background-color: {theme.BUTTON_BG};
+            border: none;
+            border-radius: 10px;
+            padding: 10px 12px;
+            """
         )
+        self.layout.addWidget(self.alert_banner)
 
-        self.clock_label = QLabel("00:00:00")
-        self.clock_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
-        self.clock_label.setStyleSheet("font-size: 18px;")
+        self.health_card = SummaryCard("Farm Health")
+        self.mode_card = SummaryCard("System Mode")
+        self.water_card = SummaryCard("Watering")
+        self.power_card = SummaryCard("Power")
+        self.recommend_card = SummaryCard("GeOS Recommendation")
+        self.device_card = SummaryCard("Device Status")
 
-        header_row = QHBoxLayout()
-        header_row.addWidget(self.mode_label)
-        header_row.addWidget(self.cursor_label)
-        header_row.addStretch()
-        header_row.addWidget(self.clock_label)
+        for card in (
+            self.health_card,
+            self.mode_card,
+            self.water_card,
+            self.power_card,
+            self.recommend_card,
+            self.device_card,
+        ):
+            self.layout.addWidget(card)
 
-        # === SYSTEM OVERVIEW ===
-        status_frame = QFrame()
-        status_frame.setStyleSheet(f"""
-            QFrame {{
-                background-color: {theme.BUTTON_BG};
-                border-radius: 8px;
-                border: none;
-            }}
-        """)
-        status_layout = QVBoxLayout(status_frame)
+        self.action_label = QLabel("Quick Actions")
+        self.action_label.setStyleSheet("font-size: 18px; font-weight: bold;")
+        self.layout.addWidget(self.action_label)
 
-        self.boot_label = QLabel("Boot: --")
-        self.control_state_label = QLabel("Control: --")
-        self.safe_label = QLabel("Safe Mode: --")
-        self.update_label = QLabel("Update Slot: --")
-        self.device_label = QLabel("Device: --")
-
-        for lbl in (self.boot_label, self.control_state_label, self.safe_label, self.update_label, self.device_label):
-            lbl.setStyleSheet("font-size: 14px;")
-            status_layout.addWidget(lbl)
-
-        # === QUICK ACTIONS ===
-        self.force_save = QPushButton("Force Energy Saver")
-        self.force_perf = QPushButton("Force Performance")
-        self.resume_ai = QPushButton("Resume AI Control")
+        self.force_save = QPushButton("Protect Power")
+        self.force_perf = QPushButton("Boost Performance")
+        self.resume_ai = QPushButton("Return To Automatic")
         self.safe_mode_btn = QPushButton("Toggle Safe Mode")
 
-        for b in (self.force_save, self.force_perf, self.resume_ai, self.safe_mode_btn):
-            b.setFixedHeight(36)
-            b.setStyleSheet(f"""
-                QPushButton {{
-                    background-color: {theme.BUTTON_BG};
-                    color: {theme.TEXT_PRIMARY};
-                    border: none;
-                    border-radius: 6px;
-                }}
-                QPushButton:hover {{
-                    background-color: {theme.BUTTON_HOVER};
-                }}
-            """)
+        for button in (self.force_save, self.force_perf, self.resume_ai, self.safe_mode_btn):
+            self.layout.addWidget(button)
 
         self.force_save.clicked.connect(lambda: self.set_mode("ENERGY_SAVER"))
         self.force_perf.clicked.connect(lambda: self.set_mode("PERFORMANCE"))
         self.resume_ai.clicked.connect(lambda: self.set_mode(None))
         self.safe_mode_btn.clicked.connect(self.toggle_safe_mode)
 
-        # === SYSTEM METRICS ===
-        system_frame = QFrame()
-        system_frame.setStyleSheet(f"""
-            QFrame {{
-                background-color: {theme.BUTTON_BG};
-                border-radius: 8px;
-                border: none;
-            }}
-        """)
-        system_layout = QVBoxLayout(system_frame)
+        self.layout.addStretch()
 
-        self.cpu_label = QLabel("CPU: --")
-        self.mem_label = QLabel("MEM: --")
-        self.load_label = QLabel("LOAD: --")
-
-        system_layout.addWidget(self.cpu_label)
-        system_layout.addWidget(self.mem_label)
-        system_layout.addWidget(self.load_label)
-
-        # === POWER SECTION ===
-        power_frame = QFrame()
-        power_frame.setStyleSheet(f"""
-            QFrame {{
-                background-color: {theme.BUTTON_BG};
-                border-radius: 8px;
-                border: none;
-            }}
-        """)
-        power_layout = QVBoxLayout(power_frame)
-
-        self.power_label = QLabel("Power: --")
-        self.backup_label = QLabel("Backup: --")
-        self.health_label = QLabel("Battery Health: --")
-
-        power_layout.addWidget(self.power_label)
-        power_layout.addWidget(self.backup_label)
-        power_layout.addWidget(self.health_label)
-
-        # === NETWORK STATUS ===
-        self.network_label = QLabel("Network: --")
-        self.network_label.setStyleSheet("font-size: 16px;")
-
-        # === WORKLOAD STATUS ===
-        self.workload_dot = QLabel("●")
-        self.workload_dot.setStyleSheet(
-            f"font-size: 14px; color: {theme.TEXT_SECONDARY};"
-        )
-        self.workload_label = QLabel("WORKLOAD: --")
-        self.workload_label.setStyleSheet("font-size: 14px;")
-
-        workload_row = QHBoxLayout()
-        workload_row.addWidget(self.workload_dot)
-        workload_row.addWidget(self.workload_label)
-        workload_row.addStretch()
-
-        # === ALERT BANNER ===
-        self.alert_label = QLabel("")
-        self.alert_label.setStyleSheet(
-            "font-size: 14px; font-weight: bold;"
-        )
-
-        # === SENSOR SNAPSHOT ===
-        sensor_frame = QFrame()
-        sensor_frame.setStyleSheet(f"""
-            QFrame {{
-                background-color: {theme.BUTTON_BG};
-                border-radius: 8px;
-                border: none;
-            }}
-        """)
-        sensor_layout = QVBoxLayout(sensor_frame)
-
-        self.soil_label = QLabel("Soil Moisture: --")
-        self.temp_label = QLabel("Temperature: --")
-        self.humidity_label = QLabel("Humidity: --")
-
-        sensor_layout.addWidget(self.soil_label)
-        sensor_layout.addWidget(self.temp_label)
-        sensor_layout.addWidget(self.humidity_label)
-
-        # === ADD TO MAIN LAYOUT ===
-        self.main_layout.addLayout(header_row)
-        self.main_layout.addWidget(status_frame)
-        for b in (self.force_save, self.force_perf, self.resume_ai, self.safe_mode_btn):
-            self.main_layout.addWidget(b)
-        self.main_layout.addWidget(self._divider())
-        self.main_layout.addWidget(system_frame)
-        self.main_layout.addWidget(self._divider())
-        self.main_layout.addWidget(power_frame)
-        self.main_layout.addWidget(self.network_label)
-        self.main_layout.addLayout(workload_row)
-        self.main_layout.addWidget(self.alert_label)
-        self.main_layout.addWidget(self._divider())
-        self.main_layout.addWidget(sensor_frame)
-        self.main_layout.addStretch()
-
-        # === REFRESH TIMER ===
-        self.cursor_on = True
-        self.dot_on = False
-        self.timer = QTimer()
+        self.timer = QTimer(self)
         self.timer.timeout.connect(self.refresh)
-        self.timer.start(500)
-
+        self.timer.start(1000)
         self.refresh()
 
-    def _divider(self):
-        line = QFrame()
-        line.setFixedHeight(1)
-        line.setStyleSheet(f"background-color: {theme.RETRO_GRID_LINE};")
-        return line
-
     def refresh(self):
-        # CLOCK
-        self.clock_label.setText(datetime.datetime.now().strftime("%H:%M:%S"))
-
-        # BLINKING CURSOR
-        self.cursor_on = not self.cursor_on
-        self.cursor_label.setVisible(self.cursor_on)
-
         state = read_state()
         if is_offline(state):
             self._set_offline()
             return
 
-        for b in (self.force_save, self.force_perf, self.resume_ai, self.safe_mode_btn):
-            b.setEnabled(True)
+        sensors = state.get("sensors", {}) if isinstance(state.get("sensors"), dict) else {}
+        control = read_control()
+        boot_state = read_boot_state()
+        device = read_device_info()
+        workloads = read_workload_state()
+        current_slot, pending_slot = read_update_info()
 
         actual_mode = state.get("current_mode", "UNKNOWN")
-        sensors = state.get("sensors", {})
-
-        # BOOT STATUS
-        boot_state = read_boot_state()
+        suggested_mode = state.get("ml_suggested_mode", "UNKNOWN")
         boot_phase = boot_state.get("phase") or state.get("boot_phase") or "UNKNOWN"
-        boot_message = boot_state.get("message") or state.get("boot_message")
-        boot_text = f"Boot: {boot_phase}"
-        if boot_message:
-            boot_text += f" ({boot_message})"
-        self.boot_label.setText(boot_text)
-
-        # CONTROL STATE (read from control plane for accuracy)
-        control = read_control()
         safe_mode = bool(control.get("safe_mode")) or os.path.exists(SAFE_MODE_FLAG)
         manual_override = control.get("manual_override_mode") or control.get("forced_mode")
+
         display_mode = actual_mode
         if control.get("emergency_shutdown"):
             display_mode = "ENERGY_SAVER"
@@ -335,116 +268,125 @@ class HomePage(QWidget):
         elif control.get("mode") == "MANUAL" and manual_override:
             display_mode = manual_override
 
-        if control.get("emergency_shutdown"):
-            control_state = "EMERGENCY"
-        elif control.get("mode") == "MANUAL":
-            override = manual_override
-            control_state = f"MANUAL ({override})" if override else "MANUAL"
-        else:
-            control_state = "AUTO"
-        self.control_state_label.setText(f"Control: {control_state}")
-        self.safe_label.setText(f"Safe Mode: {'ON' if safe_mode else 'OFF'}")
-        self.safe_mode_btn.setText("Disable Safe Mode" if safe_mode else "Enable Safe Mode")
-
-        # Show the intended target mode immediately for responsive UI feedback.
-        mode_color = theme.MODE_COLORS.get(display_mode, theme.TEXT_PRIMARY)
-        self.mode_label.setText(f"MODE: {display_mode}")
-        self.mode_label.setStyleSheet(
-            f"font-size: 26px; font-weight: bold; color: {mode_color};"
-        )
-
-        current_slot, pending_slot = read_update_info()
-        pending_text = pending_slot if pending_slot and pending_slot != "--" else "None"
-        self.update_label.setText(f"Update Slot: {current_slot} (pending: {pending_text})")
-
-        device = read_device_info()
-        device_id = device.get("device_id", "--")
-        label = device.get("label")
-        if label:
-            self.device_label.setText(f"Device: {label} ({device_id})")
-        else:
-            self.device_label.setText(f"Device: {device_id}")
-
-        # SYSTEM METRICS
-        cpu = sensors.get("cpu_percent", "--")
-        mem = sensors.get("memory_percent", "--")
-        load = sensors.get("load_avg", "--")
-
-        self.cpu_label.setText(f"CPU: {cpu}%")
-        self.mem_label.setText(f"MEM: {mem}%")
-        self.load_label.setText(f"LOAD: {load}")
-
-        # POWER
-        battery = sensors.get("battery")
-        battery_health = sensors.get("battery_health")
-        if battery is None:
-            self.power_label.setText("Power: External (No Battery)")
-            self.backup_label.setText("Backup Level: N/A")
-            self.health_label.setText("Battery Health: N/A")
-        else:
-            if battery > 20:
-                self.power_label.setText("Power: External (OK)")
-            else:
-                self.power_label.setText("Power: Backup")
-            self.backup_label.setText(f"Backup Level: {battery}%")
-            if battery_health is None:
-                self.health_label.setText("Battery Health: N/A")
-            else:
-                self.health_label.setText(f"Battery Health: {battery_health}%")
-
-        # NETWORK STATUS
-        network = sensors.get("network", "UNKNOWN")
-        if network == "ONLINE":
-            self.network_label.setText("Network: Connected")
-            self.network_label.setStyleSheet(f"color: {theme.TEXT_SECONDARY};")
-        else:
-            self.network_label.setText("Network: Offline")
-            self.network_label.setStyleSheet(f"color: {theme.TEXT_SECONDARY};")
-
-        # WORKLOAD STATUS
-        workloads = read_workload_state()
-        active = any(workloads.values()) if workloads else False
-        if active:
-            self.workload_label.setText("WORKLOAD: ACTIVE")
-            self.dot_on = not self.dot_on
-            dot_color = theme.TEXT_PRIMARY if self.dot_on else theme.TEXT_SECONDARY
-        else:
-            self.workload_label.setText("WORKLOAD: IDLE")
-            dot_color = theme.TEXT_SECONDARY
-
-        self.workload_dot.setStyleSheet(
-            f"font-size: 14px; color: {dot_color};"
-        )
-
-        # ALERTS
-        alert = get_latest_alert()
-        if alert:
-            level = alert.get("level", "INFO")
-            if level == "WARN":
-                color = theme.TEXT_SECONDARY
-            else:
-                color = theme.TEXT_PRIMARY
-            self.alert_label.setStyleSheet(
-                f"font-size: 14px; font-weight: bold; color: {color};"
-            )
-            self.alert_label.setText(f"[{alert['level']}] {alert['message']}")
-        else:
-            self.alert_label.setText("")
-
-        # SENSOR SNAPSHOT
         soil = sensors.get("soil_moisture")
         temp = sensors.get("temperature")
         humidity = sensors.get("humidity")
+        battery = sensors.get("battery")
+        battery_health = sensors.get("battery_health")
+        network = sensors.get("network", "OFFLINE")
 
-        self.soil_label.setText(
-            f"Soil Moisture: {soil}%" if soil is not None else "Soil Moisture: N/A"
+        active_workloads = [name for name, active in workloads.items() if active]
+        latest_alert = get_latest_alert()
+
+        if latest_alert:
+            level = str(latest_alert.get("level", "INFO")).upper()
+            self.alert_banner.setText(f"[{level}] {latest_alert.get('message', '--')}")
+            self.alert_banner.setStyleSheet(
+                f"""
+                font-size: 14px;
+                font-weight: bold;
+                background-color: {theme.BUTTON_BG};
+                border: 1px solid {level_color(level)};
+                border-radius: 10px;
+                padding: 10px 12px;
+                color: {level_color(level)};
+                """
+            )
+        else:
+            self.alert_banner.setText("No urgent alerts. Field system is currently calm.")
+            self.alert_banner.setStyleSheet(
+                f"""
+                font-size: 14px;
+                font-weight: bold;
+                background-color: {theme.BUTTON_BG};
+                border: 1px solid {theme.SHELL_BORDER};
+                border-radius: 10px;
+                padding: 10px 12px;
+                color: {theme.TEXT_SECONDARY};
+                """
+            )
+
+        health = "Healthy"
+        health_detail = []
+        if soil is not None and soil < 30:
+            health = "Needs attention"
+            health_detail.append("soil moisture is low")
+        if temp is not None and temp > 35:
+            health = "Heat risk"
+            health_detail.append("temperature is elevated")
+        if battery is not None and battery < 20:
+            health = "Power risk"
+            health_detail.append("battery reserve is low")
+        if safe_mode:
+            health = "Safe mode active"
+            health_detail.append("workloads are limited")
+        if not health_detail:
+            health_detail.append("all key readings are in a stable range")
+        self.health_card.value.setText(health)
+        self.health_card.detail.setText("; ".join(health_detail))
+
+        self.mode_card.value.setText(display_mode)
+        mode_detail = f"Boot {boot_phase} | control {control.get('mode', 'UNKNOWN')}"
+        if pending_slot and pending_slot != "--":
+            mode_detail += f" | update pending {pending_slot}"
+        self.mode_card.detail.setText(mode_detail)
+
+        if active_workloads:
+            self.water_card.value.setText("Active")
+            self.water_card.detail.setText(
+                "Running modules: " + ", ".join(name.title() for name in active_workloads)
+            )
+        else:
+            self.water_card.value.setText("Idle")
+            self.water_card.detail.setText("No workload modules are marked active right now.")
+
+        if battery is None:
+            self.power_card.value.setText("External")
+            self.power_card.detail.setText("No battery reported by the current platform.")
+        else:
+            source = "backup" if battery <= 20 else "stable"
+            detail = f"Battery {battery}%"
+            if battery_health is not None:
+                detail += f" | health {battery_health}%"
+            self.power_card.value.setText(source.title())
+            self.power_card.detail.setText(detail)
+
+        recommendation = "Continue automatic operation."
+        if safe_mode:
+            recommendation = "Keep safe mode enabled until the device stabilizes."
+        elif battery is not None and battery < 20:
+            recommendation = "Protect uptime and reduce heavy workloads."
+        elif soil is not None and soil < 30:
+            recommendation = "Prioritize irrigation and watch moisture recovery."
+        elif temp is not None and temp > 35:
+            recommendation = "Reduce load and monitor field temperature."
+        elif suggested_mode and suggested_mode != "UNKNOWN":
+            recommendation = f"GeOS suggests {suggested_mode.lower().replace('_', ' ')} mode."
+        self.recommend_card.value.setText(suggested_mode if suggested_mode != "UNKNOWN" else display_mode)
+        self.recommend_card.detail.setText(recommendation)
+
+        device_name = device.get("label") or device.get("device_id", "--")
+        self.device_card.value.setText("Connected" if network == "ONLINE" else "Offline")
+        self.device_card.detail.setText(
+            f"{device_name} | slot {current_slot} | network {network.lower()}"
         )
-        self.temp_label.setText(
-            f"Temperature: {temp} °C" if temp is not None else "Temperature: N/A"
-        )
-        self.humidity_label.setText(
-            f"Humidity: {humidity}%" if humidity is not None else "Humidity: N/A"
-        )
+
+        self.safe_mode_btn.setText("Disable Safe Mode" if safe_mode else "Enable Safe Mode")
+
+    def _set_offline(self):
+        self.alert_banner.setText("System offline. Waiting for telemetry and controller state.")
+        self.health_card.value.setText("Offline")
+        self.health_card.detail.setText("No recent state update available.")
+        self.mode_card.value.setText("--")
+        self.mode_card.detail.setText("Mode data unavailable.")
+        self.water_card.value.setText("--")
+        self.water_card.detail.setText("Workload state unavailable.")
+        self.power_card.value.setText("--")
+        self.power_card.detail.setText("Power data unavailable.")
+        self.recommend_card.value.setText("--")
+        self.recommend_card.detail.setText("Advisory data unavailable.")
+        self.device_card.value.setText("--")
+        self.device_card.detail.setText("Device state unavailable.")
 
     def toggle_safe_mode(self):
         enable = not os.path.exists(SAFE_MODE_FLAG)
@@ -459,45 +401,6 @@ class HomePage(QWidget):
         control = read_control()
         control["safe_mode"] = enable
         write_control(control)
-
-    def _set_offline(self):
-        self.mode_label.setText("MODE: SYSTEM OFFLINE")
-        self.mode_label.setStyleSheet(
-            f"font-size: 26px; font-weight: bold; color: {theme.TEXT_SECONDARY};"
-        )
-        self.boot_label.setText("Boot: OFFLINE")
-        self.control_state_label.setText("Control: OFFLINE")
-        self.safe_label.setText("Safe Mode: --")
-        self.update_label.setText("Update Slot: --")
-        self.device_label.setText("Device: --")
-
-        self.cpu_label.setText("CPU: --")
-        self.mem_label.setText("MEM: --")
-        self.load_label.setText("LOAD: --")
-
-        self.power_label.setText("Power: --")
-        self.backup_label.setText("Backup Level: --")
-        self.health_label.setText("Battery Health: --")
-
-        self.network_label.setText("Network: Offline")
-        self.network_label.setStyleSheet(f"color: {theme.TEXT_SECONDARY};")
-
-        self.workload_label.setText("WORKLOAD: IDLE")
-        self.workload_dot.setStyleSheet(
-            f"font-size: 14px; color: {theme.TEXT_SECONDARY};"
-        )
-
-        self.alert_label.setStyleSheet(
-            f"font-size: 14px; font-weight: bold; color: {theme.TEXT_SECONDARY};"
-        )
-        self.alert_label.setText("SYSTEM OFFLINE")
-
-        self.soil_label.setText("Soil Moisture: --")
-        self.temp_label.setText("Temperature: --")
-        self.humidity_label.setText("Humidity: --")
-
-        for b in (self.force_save, self.force_perf, self.resume_ai, self.safe_mode_btn):
-            b.setEnabled(True)
 
     def set_mode(self, mode):
         control = read_control()

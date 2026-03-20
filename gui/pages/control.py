@@ -204,6 +204,32 @@ def is_offline(state, max_age_seconds=20):
         return True
 
 
+def button_css(bg_color, font_size):
+    return f"""
+        QPushButton {{
+            background-color: {bg_color};
+            color: {theme.TEXT_PRIMARY};
+            font-size: {font_size}px;
+            border: 2px solid {theme.SHELL_BORDER};
+            border-bottom: 4px solid #051f1c;
+            border-radius: 6px;
+            font-family: {theme.MONO_FONT};
+        }}
+        QPushButton:hover {{
+            background-color: {theme.BUTTON_HOVER};
+            border: 2px solid {theme.TEXT_SECONDARY};
+            border-bottom: 4px solid #051f1c;
+        }}
+        QPushButton:pressed {{
+            background-color: {theme.BUTTON_ACTIVE};
+            border: 2px solid {theme.TEXT_PRIMARY};
+            border-bottom: 2px solid #051f1c;
+            padding-top: 2px;
+            padding-bottom: 0px;
+        }}
+    """
+
+
 # -----------------------------
 # UI COMPONENTS
 # -----------------------------
@@ -272,6 +298,8 @@ class ControlPage(QWidget):
             }}
             QLabel {{
                 color: {theme.TEXT_PRIMARY};
+                border: none;
+                background: transparent;
             }}
         """)
 
@@ -329,19 +357,7 @@ class ControlPage(QWidget):
         # TOGGLE BUTTON
         self.toggle_btn = QPushButton("SWITCH MODE")
         self.toggle_btn.setFixedHeight(44)
-        self.toggle_btn.setStyleSheet(f"""
-            QPushButton {{
-                background-color: {theme.BUTTON_ACTIVE};
-                color: {theme.TEXT_PRIMARY};
-                font-size: 15px;
-                border: none;
-                border-radius: 6px;
-                font-family: {theme.MONO_FONT};
-            }}
-            QPushButton:hover {{
-                background-color: {theme.BUTTON_HOVER};
-            }}
-        """)
+        self.toggle_btn.setStyleSheet(button_css(theme.BUTTON_ACTIVE, 15))
         self.toggle_btn.clicked.connect(self.toggle_mode)
 
         main.addWidget(self.mode_label)
@@ -353,57 +369,21 @@ class ControlPage(QWidget):
         # MANUAL OVERRIDE / EMERGENCY BUTTONS
         self.force_energy_btn = QPushButton("FORCE ENERGY SAVER")
         self.force_energy_btn.setFixedHeight(44)
-        self.force_energy_btn.setStyleSheet(f"""
-            QPushButton {{
-                background-color: {theme.BUTTON_BG};
-                color: {theme.TEXT_PRIMARY};
-                font-size: 14px;
-                border: none;
-                border-radius: 6px;
-                font-family: {theme.MONO_FONT};
-            }}
-            QPushButton:hover {{
-                background-color: {theme.BUTTON_HOVER};
-            }}
-        """)
+        self.force_energy_btn.setStyleSheet(button_css(theme.BUTTON_BG, 14))
         self.force_energy_btn.clicked.connect(
             lambda: self.set_manual_override("ENERGY_SAVER")
         )
 
         self.force_perf_btn = QPushButton("FORCE PERFORMANCE")
         self.force_perf_btn.setFixedHeight(44)
-        self.force_perf_btn.setStyleSheet(f"""
-            QPushButton {{
-                background-color: {theme.BUTTON_BG};
-                color: {theme.TEXT_PRIMARY};
-                font-size: 14px;
-                border: none;
-                border-radius: 6px;
-                font-family: {theme.MONO_FONT};
-            }}
-            QPushButton:hover {{
-                background-color: {theme.BUTTON_HOVER};
-            }}
-        """)
+        self.force_perf_btn.setStyleSheet(button_css(theme.BUTTON_BG, 14))
         self.force_perf_btn.clicked.connect(
             lambda: self.set_manual_override("PERFORMANCE")
         )
 
         self.emergency_btn = QPushButton("EMERGENCY MODE")
         self.emergency_btn.setFixedHeight(44)
-        self.emergency_btn.setStyleSheet(f"""
-            QPushButton {{
-                background-color: {theme.BUTTON_ACTIVE};
-                color: {theme.TEXT_PRIMARY};
-                font-size: 14px;
-                border: none;
-                border-radius: 6px;
-                font-family: {theme.MONO_FONT};
-            }}
-            QPushButton:hover {{
-                background-color: {theme.BUTTON_HOVER};
-            }}
-        """)
+        self.emergency_btn.setStyleSheet(button_css(theme.BUTTON_ACTIVE, 14))
         self.emergency_btn.clicked.connect(self.toggle_emergency)
 
         main.addWidget(self.force_energy_btn)
@@ -413,36 +393,12 @@ class ControlPage(QWidget):
         # SAFE MODE / MAINTENANCE BUTTONS
         self.safe_mode_btn = QPushButton("TOGGLE SAFE MODE")
         self.safe_mode_btn.setFixedHeight(40)
-        self.safe_mode_btn.setStyleSheet(f"""
-            QPushButton {{
-                background-color: {theme.BUTTON_BG};
-                color: {theme.TEXT_PRIMARY};
-                font-size: 13px;
-                border: none;
-                border-radius: 6px;
-                font-family: {theme.MONO_FONT};
-            }}
-            QPushButton:hover {{
-                background-color: {theme.BUTTON_HOVER};
-            }}
-        """)
+        self.safe_mode_btn.setStyleSheet(button_css(theme.BUTTON_BG, 13))
         self.safe_mode_btn.clicked.connect(self.toggle_safe_mode)
 
         self.maintenance_btn = QPushButton("TOGGLE MAINTENANCE")
         self.maintenance_btn.setFixedHeight(40)
-        self.maintenance_btn.setStyleSheet(f"""
-            QPushButton {{
-                background-color: {theme.BUTTON_BG};
-                color: {theme.TEXT_PRIMARY};
-                font-size: 13px;
-                border: none;
-                border-radius: 6px;
-                font-family: {theme.MONO_FONT};
-            }}
-            QPushButton:hover {{
-                background-color: {theme.BUTTON_HOVER};
-            }}
-        """)
+        self.maintenance_btn.setStyleSheet(button_css(theme.BUTTON_BG, 13))
         self.maintenance_btn.clicked.connect(self.toggle_maintenance)
 
         main.addWidget(self.safe_mode_btn)
@@ -480,19 +436,7 @@ class ControlPage(QWidget):
 
         self.clear_pending_btn = QPushButton("CLEAR PENDING UPDATE")
         self.clear_pending_btn.setFixedHeight(36)
-        self.clear_pending_btn.setStyleSheet(f"""
-            QPushButton {{
-                background-color: {theme.BUTTON_BG};
-                color: {theme.TEXT_PRIMARY};
-                font-size: 12px;
-                border: none;
-                border-radius: 6px;
-                font-family: {theme.MONO_FONT};
-            }}
-            QPushButton:hover {{
-                background-color: {theme.BUTTON_HOVER};
-            }}
-        """)
+        self.clear_pending_btn.setStyleSheet(button_css(theme.BUTTON_BG, 12))
         self.clear_pending_btn.clicked.connect(self.clear_pending_update)
         update_layout.addWidget(self.clear_pending_btn)
 
@@ -526,19 +470,7 @@ class ControlPage(QWidget):
 
             btn = QPushButton(f"TOGGLE {label.upper()}")
             btn.setFixedHeight(40)
-            btn.setStyleSheet(f"""
-                QPushButton {{
-                    background-color: {theme.BUTTON_BG};
-                    color: {theme.TEXT_PRIMARY};
-                    font-size: 13px;
-                    border: none;
-                    border-radius: 6px;
-                    font-family: {theme.MONO_FONT};
-                }}
-                QPushButton:hover {{
-                    background-color: {theme.BUTTON_HOVER};
-                }}
-            """)
+            btn.setStyleSheet(button_css(theme.BUTTON_BG, 13))
             btn.clicked.connect(lambda _, k=key: self.toggle_workload(k))
             self.workload_buttons[key] = btn
 

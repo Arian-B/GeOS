@@ -31,6 +31,7 @@ telemetry/*.csv
 # OS generated state
 state/*.json
 state/*.flag
+control/SAFE_MODE
 
 # Qt / GUI cache
 *.qmlc
@@ -55,6 +56,7 @@ distro/x86_64-live/live-build/binary.*
 distro/x86_64-live/live-build/chroot.*
 distro/x86_64-live/live-build/chroot.headers
 distro/x86_64-live/live-build/chroot.packages.*
+distro/x86_64-live/live-build/wget-log*
 
 # Generated payload inside live-build includes tree
 distro/x86_64-live/live-build/config/includes.chroot/opt/geos/
