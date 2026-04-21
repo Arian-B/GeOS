@@ -1,0 +1,5 @@
+{
+  "sensor_interval": 2,
+  "camera_interval": 5,
+  "analytics_intensity": "MEDIUM"
+}

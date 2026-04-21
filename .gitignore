@@ -1,0 +1,70 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.env
+venv/
+.env/
+.venv/
+
+# ML models (keep optional)
+*.pkl
+q_table.pkl
+ml_engine/model_registry/
+
+# ML generated reports (keep code/config, ignore run outputs)
+ml_engine/*_report.json
+ml_engine/*_results*.json
+ml_engine/benchmark_results.json
+ml_engine/evaluation_report.json
+ml_engine/explainability_report.json
+ml_engine/rolling_backtest_report.json
+ml_engine/lightgbm_tuning_report.json
+
+# Logs & telemetry (generated)
+logs/
+datasets/
+telemetry/*.jsonl
+telemetry/*.csv
+
+# OS generated state
+state/*.json
+state/*.flag
+control/SAFE_MODE
+
+# Qt / GUI cache
+*.qmlc
+
+# Roadmap / local session memory (do not push to GitHub)
+GEOS_ROADMAP_AND_SESSION_MEMORY.md
+roadmap/*.md
+
+# Debian live-build outputs (do not push artifacts; publish via GitHub Releases instead)
+distro/x86_64-live/live-build/cache/
+distro/x86_64-live/live-build/chroot/
+distro/x86_64-live/live-build/binary/
+distro/x86_64-live/live-build/.build/
+distro/x86_64-live/live-build/.lock
+distro/x86_64-live/live-build/auto/
+distro/x86_64-live/live-build/*.iso
+distro/x86_64-live/live-build/*.iso.*
+distro/x86_64-live/live-build/binary.iso
+distro/x86_64-live/live-build/binary.hybrid.iso
+distro/x86_64-live/live-build/chroot/binary.hybrid.iso
+distro/x86_64-live/live-build/binary.*
+distro/x86_64-live/live-build/chroot.*
+distro/x86_64-live/live-build/chroot.headers
+distro/x86_64-live/live-build/chroot.packages.*
+distro/x86_64-live/live-build/wget-log*
+
+# Generated payload inside live-build includes tree
+distro/x86_64-live/live-build/config/includes.chroot/opt/geos/
+
+# Editor junk
+.vscode/
+.idea/
+
+# System
+.DS_Store
+*:Zone.Identifier

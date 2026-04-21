@@ -1,0 +1,12 @@
+{
+  "objective": "multiclass",
+  "n_estimators": 300,
+  "learning_rate": 0.03,
+  "num_leaves": 63,
+  "subsample": 0.95,
+  "colsample_bytree": 0.8,
+  "random_state": 42,
+  "force_col_wise": true,
+  "verbosity": -1,
+  "min_child_samples": 20
+}

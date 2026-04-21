@@ -1,0 +1,14 @@
+#!/bin/bash
+set -euo pipefail
+
+export HOME="/home/geos"
+export QT_QPA_PLATFORM="${QT_QPA_PLATFORM:-xcb}"
+
+cd /opt/geos
+mkdir -p /opt/geos/logs
+
+if [[ -x /opt/geos/.venv/bin/python ]]; then
+  exec /opt/geos/.venv/bin/python /opt/geos/main.py >> /opt/geos/logs/gui-session.log 2>&1
+fi
+
+exec python3 /opt/geos/main.py >> /opt/geos/logs/gui-session.log 2>&1

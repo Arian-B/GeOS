@@ -1,0 +1,16 @@
+{
+  "mode": "AUTO",
+  "manual_override_mode": null,
+  "emergency_shutdown": false,
+  "irrigation": false,
+  "ventilation": true,
+  "forced_mode": null,
+  "workloads": {
+    "sensor": true,
+    "irrigation": true,
+    "camera": true,
+    "analytics": true
+  },
+  "maintenance": false,
+  "safe_mode": false
+}

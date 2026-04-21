@@ -1,0 +1,56 @@
+[
+  {
+    "name": "boot_manager",
+    "module": "core_os.boot_manager",
+    "autostart": true,
+    "restart": "always"
+  },
+  {
+    "name": "energy_controller",
+    "module": "core_os.energy_controller",
+    "autostart": true,
+    "restart": "always"
+  },
+  {
+    "name": "workload_manager",
+    "module": "workloads.workload_manager",
+    "autostart": true,
+    "restart": "always"
+  },
+  {
+    "name": "collector",
+    "module": "telemetry.collector",
+    "autostart": true,
+    "restart": "always"
+  },
+  {
+    "name": "resource_daemon",
+    "module": "core_os.resource_daemon",
+    "autostart": true,
+    "restart": "always"
+  },
+  {
+    "name": "update_watcher",
+    "module": "core_os.update_watcher",
+    "autostart": true,
+    "restart": "always"
+  },
+  {
+    "name": "workflow_server",
+    "module": "interface.workflow_server",
+    "autostart": true,
+    "restart": "always"
+  },
+  {
+    "name": "repl_server",
+    "module": "interface.repl_server",
+    "autostart": true,
+    "restart": "always"
+  },
+  {
+    "name": "metrics_server",
+    "module": "telemetry.metrics_server",
+    "autostart": true,
+    "restart": "always"
+  }
+]
