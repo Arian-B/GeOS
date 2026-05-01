@@ -1,0 +1,135 @@
+================================================================================
+      GeOS — CURRENT PROJECT BACKGROUND AND TECHNICAL SUMMARY
+      Updated: April 23, 2026
+================================================================================
+
+SECTION 1: CURRENT PROJECT SCOPE
+
+GeOS (Green Edge Operating System) is currently a Python-based smart farming
+runtime and interface stack. The active work in the repository is centered on:
+
+- the farmer-facing GUI shell
+- runtime orchestration across local services
+- telemetry collection and workload control
+- LightGBM-based policy decisions
+- recovery/update/runtime support logic
+
+GeOS is not currently being developed as an ISO-building or VM-boot demo
+project. Earlier Debian live-build work has been removed from the repository.
+Packaging and deployment-image work are deferred until a later phase.
+
+SECTION 2: HIGH-LEVEL ARCHITECTURE
+
+The repo is organized around a service-oriented runtime:
+
+- core_os/      main control logic, boot/recovery, updates, kernel hooks
+- gui/          PySide6 fullscreen shell and pages
+- ml_engine/    features, training, inference, calibration, reports
+- workloads/    simulated agricultural workloads
+- telemetry/    collection and metrics serving
+- sensors/      hybrid simulated/system sensor inputs
+- interface/    workflow API and REPL access
+- control/      persistent control-plane state
+- state/        persistent runtime state
+- services/     service manifest
+- tests/        unit/integration coverage
+
+SECTION 3: CENTRAL CONTROL LOOP
+
+The main runtime brain is core_os/energy_controller.py.
+
+Each loop cycle:
+1. updates sensors
+2. reads CPU, memory, load, and time context
+3. checks network state
+4. raises alerts for critical conditions
+5. reads control state and workload context
+6. builds rolling policy features
+7. evaluates ML decision plus safety/manual overrides
+8. applies mode changes
+9. writes shared runtime state
+
+The three runtime modes are:
+- ENERGY_SAVER
+- BALANCED
+- PERFORMANCE
+
+SECTION 4: ML STACK
+
+The current ML direction is centered on LightGBM.
+
+Implemented components include:
+- telemetry dataset logging
+- feature building
+- dataset CSV generation
+- LightGBM training
+- confidence calibration
+- model registry snapshots
+- benchmarking and explainability reports
+
+The active feature contract uses 45 features built from:
+- current telemetry
+- rolling averages
+- deltas
+- time encoding
+- workload/control context
+- streak indicators
+
+SECTION 5: GUI AND USER EXPERIENCE
+
+The GUI is a fullscreen PySide6 shell that acts as the main user-facing
+surface for the project.
+
+It includes pages for:
+- overview
+- sensors
+- control
+- advisor
+- alerts
+- updates
+- maintenance
+- power and water management
+- task monitoring
+- device/settings
+- utility apps
+
+Current work is expected to emphasize interface polish, clarity, and overall
+runtime integration quality.
+
+SECTION 6: SHARED STATE MODEL
+
+Important runtime files:
+- control/control.json
+- state/os_state.json
+- workloads/workload_config.json
+- workloads/workload_state.json
+- datasets/telemetry_log.jsonl
+- logs/os_events.log
+
+This file-based design keeps the prototype simple, but it also means runtime
+coordination and atomicity remain important implementation concerns.
+
+SECTION 7: CURRENT PRIORITIES
+
+Highest-priority work:
+- improve the interface
+- refine user-facing explanations
+- stabilize runtime behavior
+- harden service coordination
+- keep ML outputs understandable and defensible
+
+Deferred work:
+- distro packaging
+- bootable image generation
+- VM/USB boot validation
+- board-specific deployment pipelines
+
+SECTION 8: CURRENT POSITIONING
+
+The correct way to describe GeOS today is:
+
+"A smart farming runtime and interface stack with an ML-backed control loop,
+implemented primarily in Python, with Linux-oriented energy control concepts,
+simulated workloads, and a farmer-facing GUI shell."
+
+That is the active implementation scope represented by the repository now.
