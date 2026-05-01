@@ -31,7 +31,7 @@ telemetry/*.csv
 # OS generated state
 state/*.json
 state/*.flag
-state/tmp*/
+state/tmp*
 state/__pycache__/
 control/SAFE_MODE
 
