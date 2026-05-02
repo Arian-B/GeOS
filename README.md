@@ -1,4 +1,4 @@
-# GeOS
+# GeOS - Green Edge Operating System
 ### An Adaptive ML-Driven Linux OS Control Layer for Smart Farming on Embedded Devices
 
 GeOS is a **Python-based, Linux-native adaptive control layer** for **smart agricultural edge systems**. It is designed for devices such as soil monitoring nodes, irrigation controllers, and field-surveillance units that must balance **responsiveness, energy efficiency, and workload pressure** in changing farm conditions.

@@ -1,6 +1,6 @@
 {
-  "sensor": false,
-  "irrigation": false,
-  "camera": false,
-  "analytics": false
+  "sensor": true,
+  "irrigation": true,
+  "camera": true,
+  "analytics": true
 }

@@ -1,8 +1,8 @@
 {
   "model_type": "LightGBMClassifier",
-  "trained_at": "2026-04-23T11:39:45",
+  "trained_at": "2026-05-02T10:08:46",
   "dataset": "D:\\Coding\\GeOS\\datasets\\telemetry.csv",
-  "rows": 19958,
+  "rows": 20032,
   "features": [
     "cpu_percent",
     "cpu_percent_avg",
@@ -55,7 +55,7 @@
     "ENERGY_SAVER",
     "PERFORMANCE"
   ],
-  "accuracy": 0.9724,
+  "accuracy": 0.9738,
   "lightgbm_params": {
     "objective": "multiclass",
     "n_estimators": 300,
@@ -70,13 +70,13 @@
   },
   "confidence_calibration": {
     "method": "isotonic_on_top_probability",
-    "rows": 3194,
-    "raw_brier": 0.023742,
-    "calibrated_brier": 0.021015
+    "rows": 3205,
+    "raw_brier": 0.017158,
+    "calibrated_brier": 0.016205
   },
   "recommended_thresholds": {
     "battery_energy_saver": 40.0,
-    "soil_performance": 47.49,
+    "soil_performance": 47.52,
     "temperature_energy_saver": 34.0
   },
   "notes": [
@@ -86,15 +86,15 @@
     "Confidence score is calibrated from a held-out calibration split when available"
   ],
   "registry_entry": {
-    "version_id": "20260423T113945",
-    "trained_at": "2026-04-23T11:39:45",
+    "version_id": "20260502T100846",
+    "trained_at": "2026-05-02T10:08:46",
     "model_type": "LightGBMClassifier",
-    "rows": 19958,
-    "accuracy": 0.9724,
+    "rows": 20032,
+    "accuracy": 0.9738,
     "paths": {
-      "model": "D:\\Coding\\GeOS\\ml_engine\\model_registry\\policy_model_20260423T113945.pkl",
-      "meta": "D:\\Coding\\GeOS\\ml_engine\\model_registry\\policy_model_20260423T113945.meta.json",
-      "calibrator": "D:\\Coding\\GeOS\\ml_engine\\model_registry\\policy_confidence_calibrator_20260423T113945.pkl"
+      "model": "D:\\Coding\\GeOS\\ml_engine\\model_registry\\policy_model_20260502T100846.pkl",
+      "meta": "D:\\Coding\\GeOS\\ml_engine\\model_registry\\policy_model_20260502T100846.meta.json",
+      "calibrator": "D:\\Coding\\GeOS\\ml_engine\\model_registry\\policy_confidence_calibrator_20260502T100846.pkl"
     }
   }
 }
